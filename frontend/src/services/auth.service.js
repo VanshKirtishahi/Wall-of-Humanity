@@ -29,7 +29,7 @@ const register = async (userData) => {
 
 const login = async (credentials) => {
   try {
-    const response = await api.post('/auth/login', {
+    const response = await api.post('/api/auth/login', {
       email: credentials.email.toLowerCase().trim(),
       password: credentials.password
     });
