@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'https://wall-of-humanity-bc9g.onrender.com',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -10,6 +10,11 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
+    // Remove double /api prefix if it exists
+    if (config.url?.startsWith('/api/api/')) {
+      config.url = config.url.replace('/api/api/', '/api/');
+    }
+    
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.token) {
       config.headers.Authorization = `Bearer ${user.token}`;
