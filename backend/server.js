@@ -128,17 +128,17 @@ if (process.env.NODE_ENV === 'development') {
   app.use(debugLogger);
 }
 
-// Then mount routes
+// Mount routes with proper prefixes
 app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationRoutes);
-app.use('/api/requests', requestRoutes);
 app.use('/api/volunteers', volunteerRoutes);
+app.use('/api/requests', requestRoutes);
 app.use('/api/ngos', ngoRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/free-food', freeFoodRoutes);
 
-// Add this after your other middleware
+// Serve static files
 app.use('/uploads', express.static('uploads'));
 
 // Error handling middleware should be last
