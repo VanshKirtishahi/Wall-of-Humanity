@@ -101,7 +101,7 @@ const FreeFoodForm = () => {
 
       // Set image preview if exists
       if (listing.venueImage) {
-        setImagePreview(`${api.defaults.baseURL}/uploads/free-food/${listing.venueImage}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL}/uploads/free-food/${listing.venueImage}`);
       }
     } catch (error) {
       console.error('Error fetching listing:', error);
@@ -187,7 +187,7 @@ const FreeFoodForm = () => {
 
       // Update image preview if new image was uploaded
       if (response.data.venueImage) {
-        setImagePreview(`${api.defaults.baseURL}/uploads/free-food/${response.data.venueImage}`);
+        setImagePreview(`${import.meta.env.VITE_API_URL}/uploads/free-food/${response.data.venueImage}`);
       }
 
       navigate('/free-food', { 

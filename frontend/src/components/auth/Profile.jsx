@@ -34,22 +34,13 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        setLoading(true); // Set loading at start
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile data');
-        }
-
-        const data = await response.json();
+        setLoading(true);
+        const response = await api.get('/api/auth/profile');
+        const data = response.data;
+        
         setProfileData(data);
         if (data.avatarUrl) {
-          setAvatarPreview(`${import.meta.env.VITE_API_URL}${data.avatarUrl}`);
+          setAvatarPreview(`${import.meta.env.VITE_API_URL}/uploads/profile/${data.avatarUrl}`);
         }
         setEditedData({
           name: data.name || '',
@@ -59,16 +50,11 @@ const Profile = () => {
           address: data.address || ''
         });
       } catch (error) {
-        console.error('Error details:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          headers: error.response?.headers
-        });
+        console.error('Error fetching profile:', error);
         toast.error('Failed to load profile data');
         setError(error.message);
       } finally {
-        setLoading(false); // Set loading to false regardless of success/failure
+        setLoading(false);
       }
     };
 
@@ -128,12 +114,11 @@ const Profile = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile/update`, {
-        method: 'PUT',
+      const response = await api.put('/api/auth/profile/update', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (!response.ok) {
@@ -184,12 +169,7 @@ const Profile = () => {
         const user = JSON.parse(userStr);
         if (!user.token) throw new Error('Invalid authentication token');
 
-        const response = await fetch('http://localhost:5000/api/auth/profile/delete', {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${user.token}`
-          }
-        });
+        const response = await api.delete('/api/auth/profile/delete');
 
         if (!response.ok) {
           const errorData = await response.json();

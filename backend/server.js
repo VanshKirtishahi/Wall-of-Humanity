@@ -26,16 +26,26 @@ mongoose.connection.once('open', () => {
 });
 
 // Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://wall-of-humanity.vercel.app',
-    process.env.FRONTEND_URL
-  ],
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'https://wall-of-humanity.vercel.app',
+      'https://wall-of-humanity-bc9g.onrender.com'
+    ];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-}));
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -116,17 +126,6 @@ app.use('/uploads', express.static('uploads'));
 
 // Error handling middleware should be last
 app.use(errorHandler);
-
-// Add OPTIONS handling for preflight requests
-app.options('*', cors());
-
-// Add after CORS middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
 
 // Global error handler
 app.use((err, req, res, next) => {
