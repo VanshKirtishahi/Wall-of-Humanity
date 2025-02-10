@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import ScrollToTop from './utils/ScrollToTop';
 import Navbar from './components/layout/Navbar';
@@ -29,73 +29,75 @@ import FreeFoodListings from './components/listings/FreeFoodListings';
 const App = () => {
   return (
     <AuthProvider>
-      <ToastContainer />
-      <div className="flex flex-col min-h-screen">
-        <ScrollToTop />
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={
-              <>
-                <Hero />
-                <InfoCard />
-                <WhoWeAre />
-                <DonationCart />
-              </>
-            } />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<ContactForm />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/profile"
-              element={
+      <Router>
+        <ToastContainer />
+        <div className="flex flex-col min-h-screen">
+          <ScrollToTop />
+          <Navbar />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={
+                <>
+                  <Hero />
+                  <InfoCard />
+                  <WhoWeAre />
+                  <DonationCart />
+                </>
+              } />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<ContactForm />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="/settings" element={<Settings />} />
+              <Route 
+                path="/donation-form" 
+                element={
+                  <PrivateRoute>
+                    <DonationForm />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/donation-form/:id" 
+                element={
+                  <PrivateRoute>
+                    <DonationForm />
+                  </PrivateRoute>
+                } 
+              />
+              <Route path="/request-form" element={<RequestForm />} />
+              <Route 
+                path="/my-donations" 
+                element={
+                  <PrivateRoute>
+                    <MyDonations />
+                  </PrivateRoute>
+                } 
+              />
+              <Route path="/volunteer-form" element={<VolunteerForm />} />
+              <Route path="/ngo-registration" element={<NGOForm />} />
+              <Route path="/donation-cart" element={<DonationCart />} />
+              <Route path="/free-food" element={<FreeFoodListings />} />
+              <Route path="/free-food/new" element={<PrivateRoute><FreeFoodForm /></PrivateRoute>} />
+              <Route path="/free-food/edit/:id" element={<PrivateRoute><FreeFoodForm /></PrivateRoute>} />
+              <Route path="/free-food-form" element={
                 <PrivateRoute>
-                  <Profile />
+                  <FreeFoodForm />
                 </PrivateRoute>
-              }
-            />
-            <Route path="/settings" element={<Settings />} />
-            <Route 
-              path="/donation-form" 
-              element={
-                <PrivateRoute>
-                  <DonationForm />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/donation-form/:id" 
-              element={
-                <PrivateRoute>
-                  <DonationForm />
-                </PrivateRoute>
-              } 
-            />
-            <Route path="/request-form" element={<RequestForm />} />
-            <Route 
-              path="/my-donations" 
-              element={
-                <PrivateRoute>
-                  <MyDonations />
-                </PrivateRoute>
-              } 
-            />
-            <Route path="/volunteer-form" element={<VolunteerForm />} />
-            <Route path="/ngo-registration" element={<NGOForm />} />
-            <Route path="/donation-cart" element={<DonationCart />} />
-            <Route path="/free-food" element={<FreeFoodListings />} />
-            <Route path="/free-food/new" element={<PrivateRoute><FreeFoodForm /></PrivateRoute>} />
-            <Route path="/free-food/edit/:id" element={<PrivateRoute><FreeFoodForm /></PrivateRoute>} />
-            <Route path="/free-food-form" element={
-              <PrivateRoute>
-                <FreeFoodForm />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+              } />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </Router>
     </AuthProvider>
   );
 };
