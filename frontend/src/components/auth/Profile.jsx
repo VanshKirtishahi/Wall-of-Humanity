@@ -36,7 +36,7 @@ const Profile = () => {
       try {
         setLoading(true); // Set loading at start
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/profile', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -49,7 +49,7 @@ const Profile = () => {
         const data = await response.json();
         setProfileData(data);
         if (data.avatarUrl) {
-          setAvatarPreview(`http://localhost:5000${data.avatarUrl}`);
+          setAvatarPreview(`${import.meta.env.VITE_API_URL}${data.avatarUrl}`);
         }
         setEditedData({
           name: data.name || '',
@@ -59,7 +59,12 @@ const Profile = () => {
           address: data.address || ''
         });
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          headers: error.response?.headers
+        });
         toast.error('Failed to load profile data');
         setError(error.message);
       } finally {
@@ -123,7 +128,7 @@ const Profile = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile/update', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/profile/update`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -149,7 +154,7 @@ const Profile = () => {
       
       setProfileData(updatedData);
       if (updatedData.avatarUrl) {
-        setAvatarPreview(`http://localhost:5000${updatedData.avatarUrl}`);
+        setAvatarPreview(`${import.meta.env.VITE_API_URL}${updatedData.avatarUrl}`);
       }
       setIsEditing(false);
       toast.success('Profile updated successfully!');
@@ -255,7 +260,7 @@ const Profile = () => {
               <div className="-mt-16 relative">
                 <div className="relative">
                   <img
-                    src={avatarPreview || (profileData?.avatarUrl ? `http://localhost:5000${profileData.avatarUrl}` : defaultAvatar)}
+                    src={avatarPreview || (profileData?.avatarUrl ? `${import.meta.env.VITE_API_URL}${profileData.avatarUrl}` : defaultAvatar)}
                     alt="Profile"
                     className="h-32 w-32 rounded-full border-4 border-white object-cover bg-white shadow-lg"
                     onError={(e) => {

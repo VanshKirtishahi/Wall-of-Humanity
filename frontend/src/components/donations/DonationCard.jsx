@@ -102,12 +102,12 @@ const DonationCard = ({ donation, onEdit, onDelete, isOwner, userLocation }) => 
         const firstImage = imagePath[0];
         if (!firstImage) return '/default-donation.jpg';
         // Just use the filename directly
-        return `http://localhost:5000/uploads/donations/${firstImage}`;
+        return `${import.meta.env.VITE_API_URL}/uploads/donations/${firstImage}`;
       }
 
       if (typeof imagePath === 'string') {
         // Just use the filename directly
-        return `http://localhost:5000/uploads/donations/${imagePath}`;
+        return `${import.meta.env.VITE_API_URL}/uploads/donations/${imagePath}`;
       }
     } catch (error) {
       console.error('Error processing image URL:', error);
