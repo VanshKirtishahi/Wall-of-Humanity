@@ -20,7 +20,7 @@ const FreeFoodListings = () => {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/free-food');
+      const response = await api.get('/api/free-food');
       if (Array.isArray(response.data)) {
         const userListings = response.data.filter(listing => listing.uploadedBy === user?._id);
         setListings(userListings);
