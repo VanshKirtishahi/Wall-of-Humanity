@@ -5,7 +5,7 @@ const emailService = new EmailService();
 
 const register = async (userData) => {
   try {
-    const response = await api.post('/auth/register', {
+    const response = await api.post('/api/auth/register', {
       name: userData.name,
       email: userData.email.toLowerCase().trim(),
       password: userData.password
@@ -29,7 +29,7 @@ const register = async (userData) => {
 
 const login = async (credentials) => {
   try {
-    const response = await api.post('/auth/login', {
+    const response = await api.post('/api/auth/login', {
       email: credentials.email.toLowerCase().trim(),
       password: credentials.password
     });
@@ -61,7 +61,7 @@ const getCurrentUser = () => {
 
 const adminLogin = async (credentials) => {
   try {
-    const response = await api.post('/auth/admin/login', credentials);
+    const response = await api.post('/api/auth/admin/login', credentials);
     if (response.data.token) {
       localStorage.setItem('adminToken', response.data.token);
     }
@@ -77,7 +77,7 @@ const verifyAdminToken = async () => {
     const token = localStorage.getItem('adminToken');
     if (!token) throw new Error('No token found');
 
-    const response = await api.get('/auth/admin/verify', {
+    const response = await api.get('/api/auth/admin/verify', {
       headers: {
         Authorization: `Bearer ${token}`
       }
