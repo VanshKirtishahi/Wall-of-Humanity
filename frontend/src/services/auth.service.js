@@ -35,17 +35,13 @@ const login = async (credentials) => {
     });
 
     if (response.data.token && response.data.user) {
-      const userData = {
-        ...response.data.user,
-        token: response.data.token
-      };
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return userData;
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      return response.data.user;
     }
     throw new Error('Invalid response from server');
   } catch (error) {
-    console.error('Login error details:', error.response?.data);
+    console.error('Login error:', error.response?.data || error);
     throw new Error(error.response?.data?.message || 'Login failed');
   }
 };

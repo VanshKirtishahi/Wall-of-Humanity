@@ -33,27 +33,15 @@ class DonationService {
 
   async createDonation(formData) {
     try {
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        throw new Error('Authentication required');
-      }
-
-      const user = JSON.parse(userData);
-      if (!user.token) {
-        throw new Error('Authentication required');
-      }
-
       const response = await api.post('/api/donations', formData, {
         headers: {
-          'Authorization': `Bearer ${user.token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      throw error;
+      throw error.response?.data || { message: 'Error creating donation' };
     }
   }
 
