@@ -1,19 +1,14 @@
 import api from './api';
 import EmailService from './email.service';
-import axios from 'axios';
 
 const emailService = new EmailService();
 
 const register = async (userData) => {
   try {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+    const response = await api.post('/auth/register', {
       name: userData.name,
       email: userData.email.toLowerCase().trim(),
       password: userData.password
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
     });
 
     if (response.data.token && response.data.user) {
@@ -34,13 +29,9 @@ const register = async (userData) => {
 
 const login = async (credentials) => {
   try {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+    const response = await api.post('/auth/login', {
       email: credentials.email.toLowerCase().trim(),
       password: credentials.password
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
     });
 
     if (response.data.token && response.data.user) {
