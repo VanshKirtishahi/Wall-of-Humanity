@@ -30,12 +30,8 @@ const MyDonations = () => {
 
       try {
         setLoading(true);
-        const response = await api.get('/donations/my-donations', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
+        const response = await api.get('/api/donations/my-donations');
+        
         if (response.data) {
           setDonations(response.data);
           setError('');

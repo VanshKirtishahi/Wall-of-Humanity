@@ -26,7 +26,7 @@ const DonationCart = () => {
         setIsLoading(true);
         const [donationsData, freeFoodData] = await Promise.all([
           donationService.getAllDonations(),
-          api.get('/free-food')
+          api.get('/api/free-food')
         ]);
         
         setDonations(donationsData);

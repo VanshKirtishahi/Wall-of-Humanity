@@ -12,6 +12,9 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
+    // Remove any double /api in the URL
+    config.url = config.url.replace('/api/api/', '/api/');
+    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

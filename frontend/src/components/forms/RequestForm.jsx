@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import requestService from "../../services/request.service";
 import donationService from "../../services/donation.service";
 import Swal from 'sweetalert2';
+import api from '../../services/api';
 
 const RequestForm = () => {
   const navigate = useNavigate();
@@ -83,7 +84,6 @@ const RequestForm = () => {
     setError("");
 
     try {
-      // First create the request in database
       const requestData = {
         donation: donationId,
         requestorName: formData.requestorName,
@@ -98,40 +98,28 @@ const RequestForm = () => {
       const response = await requestService.createRequest(requestData);
       console.log("Request created:", response);
 
-      // Then send email notification
-      const emailResponse = await fetch('http://localhost:5000/api/email/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
-        },
-        body: JSON.stringify({
-          name: formData.requestorName,
-          email: formData.email || user.email,
-          message: `
-            <h2>New Donation Request</h2>
-            <h3>Donation Details:</h3>
-            <p>Title: ${donation?.title}</p>
-            <p>Type: ${donation?.type}</p>
-            <p>Description: ${donation?.description}</p>
+      // Send email notification
+      await api.post('/api/email/send-email', {
+        name: formData.requestorName,
+        email: formData.email || user.email,
+        message: `
+          <h2>New Donation Request</h2>
+          <h3>Donation Details:</h3>
+          <p>Title: ${donation?.title}</p>
+          <p>Type: ${donation?.type}</p>
+          <p>Description: ${donation?.description}</p>
 
-            <h3>Requester Details:</h3>
-            <p>Name: ${formData.requestorName}</p>
-            <p>Contact: ${formData.contactNumber}</p>
-            <p>Address: ${formData.address}</p>
+          <h3>Requester Details:</h3>
+          <p>Name: ${formData.requestorName}</p>
+          <p>Contact: ${formData.contactNumber}</p>
+          <p>Address: ${formData.address}</p>
 
-            <h3>Request Details:</h3>
-            <p>Reason: ${formData.reason}</p>
-            <p>Quantity Needed: ${formData.quantity}</p>
-            <p>Urgency Level: ${formData.urgency}</p>
-          `
-        })
+          <h3>Request Details:</h3>
+          <p>Reason: ${formData.reason}</p>
+          <p>Quantity Needed: ${formData.quantity}</p>
+          <p>Urgency Level: ${formData.urgency}</p>
+        `
       });
-
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        throw new Error(errorData.message || 'Failed to send email notification');
-      }
 
       // Show success message and redirect
       setShowSuccess(true);
@@ -152,8 +140,8 @@ const RequestForm = () => {
 
     } catch (error) {
       console.error('Request submission error:', error);
-      toast.error(error.message || 'Failed to submit request');
-      setError(error.message || 'Failed to submit request');
+      toast.error(error.response?.data?.message || 'Failed to submit request');
+      setError(error.response?.data?.message || 'Failed to submit request');
     } finally {
       setIsSubmitting(false);
     }

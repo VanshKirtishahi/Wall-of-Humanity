@@ -29,8 +29,9 @@ const FreeFoodListings = () => {
         setError('Invalid response format');
       }
     } catch (error) {
-      console.error('Error fetching listings:', error);
-      setError('Failed to fetch listings');
+      console.error('Error fetching listings:', error.response?.data || error);
+      setError(error.response?.data?.message || 'Failed to fetch listings');
+      toast.error(error.response?.data?.message || 'Failed to fetch listings');
     } finally {
       setIsLoading(false);
     }

@@ -2,7 +2,7 @@ import api from './api';
 
 const getAllNGOs = async () => {
   try {
-    const response = await api.get('/ngos');
+    const response = await api.get('/api/ngos');
     return response.data;
   } catch (error) {
     console.error('Error fetching NGOs:', error);
@@ -48,7 +48,7 @@ const registerNGO = async (ngoData) => {
       formData.append('certification', ngoData.certification);
     }
 
-    const response = await api.post('/ngos/register', formData, {
+    const response = await api.post('/api/ngos/register', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -63,7 +63,7 @@ const registerNGO = async (ngoData) => {
 
 const updateNGOStatus = async (ngoId, status) => {
   try {
-    const response = await api.patch(`/ngos/${ngoId}/status`, { status });
+    const response = await api.patch(`/api/ngos/${ngoId}/status`, { status });
     return response.data;
   } catch (error) {
     console.error('Error updating NGO status:', error);
@@ -74,7 +74,7 @@ const updateNGOStatus = async (ngoId, status) => {
 const getNGOProfile = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await api.get('/ngos/profile', {
+    const response = await api.get('/api/ngos/profile', {
       headers: {
         'Authorization': `Bearer ${token}`
       }

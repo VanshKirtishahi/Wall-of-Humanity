@@ -98,23 +98,16 @@ const DonationCard = ({ donation, onEdit, onDelete, isOwner, userLocation }) => 
     }
 
     try {
+      const baseUrl = import.meta.env.VITE_API_URL;
       if (Array.isArray(imagePath)) {
         const firstImage = imagePath[0];
-        if (!firstImage) return '/default-donation.jpg';
-        // Just use the filename directly
-        return `${import.meta.env.VITE_API_URL}/uploads/donations/${firstImage}`;
+        return firstImage ? `${baseUrl}/uploads/donations/${firstImage}` : '/default-donation.jpg';
       }
-
-      if (typeof imagePath === 'string') {
-        // Just use the filename directly
-        return `${import.meta.env.VITE_API_URL}/uploads/donations/${imagePath}`;
-      }
+      return typeof imagePath === 'string' ? `${baseUrl}/uploads/donations/${imagePath}` : '/default-donation.jpg';
     } catch (error) {
       console.error('Error processing image URL:', error);
       return '/default-donation.jpg';
     }
-
-    return '/default-donation.jpg';
   };
 
   return (

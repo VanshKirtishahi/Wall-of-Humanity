@@ -101,52 +101,42 @@ const Profile = () => {
     try {
       const formData = new FormData();
       
-      // Append profile data
       Object.keys(editedData).forEach(key => {
         if (editedData[key] !== undefined && editedData[key] !== null) {
           formData.append(key, editedData[key]);
         }
       });
 
-      // Append avatar if changed
       if (avatar) {
         formData.append('avatar', avatar);
       }
 
-      const token = localStorage.getItem('token');
       const response = await api.put('/api/auth/profile/update', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
-      }
-
-      const updatedData = await response.json();
+      const updatedData = response.data;
       
-      // Update context and local storage with new user data
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       const updatedUser = { 
         ...currentUser, 
         ...updatedData,
-        token: currentUser.token // Preserve the token
+        token: currentUser.token
       };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
       setProfileData(updatedData);
       if (updatedData.avatarUrl) {
-        setAvatarPreview(`${import.meta.env.VITE_API_URL}${updatedData.avatarUrl}`);
+        setAvatarPreview(`${import.meta.env.VITE_API_URL}/uploads/profile/${updatedData.avatarUrl}`);
       }
       setIsEditing(false);
       toast.success('Profile updated successfully!');
 
     } catch (error) {
       console.error('Update error:', error);
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -240,7 +230,7 @@ const Profile = () => {
               <div className="-mt-16 relative">
                 <div className="relative">
                   <img
-                    src={avatarPreview || (profileData?.avatarUrl ? `${import.meta.env.VITE_API_URL}${profileData.avatarUrl}` : defaultAvatar)}
+                    src={avatarPreview || (profileData?.avatarUrl ? `${import.meta.env.VITE_API_URL}/uploads/profile/${profileData.avatarUrl}` : defaultAvatar)}
                     alt="Profile"
                     className="h-32 w-32 rounded-full border-4 border-white object-cover bg-white shadow-lg"
                     onError={(e) => {
