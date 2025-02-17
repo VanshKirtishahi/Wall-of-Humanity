@@ -84,46 +84,45 @@ router.get('/my-donations', auth, async (req, res) => {
 // Create donation
 router.post('/', auth, upload.single('images'), async (req, res) => {
   try {
-    console.log('Received body:', req.body);
-    
-    // Safely parse JSON fields
-    let availability = {};
-    let location = {};
-    
-    try {
-      if (req.body.availability) {
-        availability = typeof req.body.availability === 'string' 
-          ? JSON.parse(req.body.availability)
-          : req.body.availability;
-      }
-      
-      if (req.body.location) {
-        location = typeof req.body.location === 'string'
-          ? JSON.parse(req.body.location)
-          : req.body.location;
-      }
-    } catch (e) {
-      console.error('JSON parsing error:', e);
-      return res.status(400).json({ message: 'Invalid JSON data in request' });
-    }
+    console.log('Request body:', req.body);
+    console.log('File:', req.file);
 
     const donationData = {
       ...req.body,
-      availability,
-      location,
       user: req.userId,
       userId: req.userId,
-      donorName: req.user.name,
-      images: req.file ? [req.file.path] : []
+      donorName: req.user.name
     };
+
+    // Parse JSON strings back to objects
+    try {
+      if (req.body.availability) {
+        donationData.availability = JSON.parse(req.body.availability);
+      }
+      if (req.body.location) {
+        donationData.location = JSON.parse(req.body.location);
+      }
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      return res.status(400).json({ message: 'Invalid data format' });
+    }
+
+    // Add image URL if image was uploaded
+    if (req.file) {
+      donationData.images = [req.file.path];
+    }
 
     const donation = new Donation(donationData);
     await donation.save();
     
+    console.log('Created donation:', donation);
     res.status(201).json(donation);
   } catch (error) {
     console.error('Error creating donation:', error);
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

@@ -114,45 +114,33 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
-      // Log the incoming formData for debugging
-      console.log('Incoming formData:', Object.fromEntries(formData));
-      
       // Create a new FormData instance
       const form = new FormData();
       
       // Handle form data
-      Object.entries(formData).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(formData)) {
         if (key === 'images') {
           if (value instanceof File) {
             form.append('images', value);
           }
         } else if (key === 'availability' || key === 'location') {
-          // Ensure we're sending a valid JSON string
-          const jsonValue = typeof value === 'string' ? value : JSON.stringify(value);
-          form.append(key, jsonValue);
+          // Only append if value exists
+          if (value) {
+            const jsonValue = typeof value === 'object' ? JSON.stringify(value) : value;
+            form.append(key, jsonValue);
+          }
         } else {
-          form.append(key, value);
+          // Only append if value is not null/undefined
+          if (value != null) {
+            form.append(key, value);
+          }
         }
-      });
-
-      const response = await api.post('/donations', form, {
-        headers: {
-          // Let browser set the content type for FormData
-          'Content-Type': undefined
-        }
-      });
-      
-      if (!response.data) {
-        throw new Error('No response data received');
       }
-      
+
+      const response = await api.post('/donations', form);
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('user');
-        throw new Error('Authentication required');
-      }
       throw error;
     }
   }
