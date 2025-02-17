@@ -201,30 +201,35 @@ const DonationForm = () => {
     setIsLoading(true);
 
     try {
-      const formDataToSend = new FormData();
-      
-      // Format availability time with periods
-      const formattedData = {
+      // Validate required fields
+      if (!formData.title || !formData.description || !formData.quantity) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Validate location
+      if (!formData.location.address || !formData.location.city || !formData.location.state) {
+        toast.error('Please fill in all location fields');
+        return;
+      }
+
+      // Create form data
+      const formDataToSend = {
         ...formData,
         availability: {
           ...formData.availability,
-          startTime: `${formData.availability.startTime} ${formData.availability.startPeriod}`,
-          endTime: `${formData.availability.endTime} ${formData.availability.endPeriod}`
+          startTime: formData.availability.startTime 
+            ? `${formData.availability.startTime} ${formData.availability.startPeriod}`
+            : '',
+          endTime: formData.availability.endTime 
+            ? `${formData.availability.endTime} ${formData.availability.endPeriod}`
+            : ''
         }
       };
-      
-      // Add all form data except images
-      Object.keys(formattedData).forEach(key => {
-        if (key === 'availability' || key === 'location') {
-          formDataToSend.append(key, JSON.stringify(formattedData[key]));
-        } else if (key !== 'images') {
-          formDataToSend.append(key, formattedData[key]);
-        }
-      });
-      
-      // Add image if exists
+
+      // Handle image separately
       if (image) {
-        formDataToSend.append('images', image);
+        formDataToSend.images = image;
       }
 
       let response;

@@ -114,25 +114,28 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
-      // Create a new FormData instance
       const form = new FormData();
       
-      // Log incoming data for debugging
-      console.log('Incoming formData:', formData);
-      
-      // Handle form data similar to freeFoodService
-      Object.keys(formData).forEach(key => {
-        if (key === 'images') {
-          if (formData[key] instanceof File) {
-            form.append('images', formData[key]);
-          }
-        } else if (typeof formData[key] === 'object') {
-          // Stringify objects (location and availability)
-          form.append(key, JSON.stringify(formData[key]));
-        } else {
-          form.append(key, formData[key]);
+      // Handle basic fields
+      const basicFields = ['type', 'title', 'description', 'quantity', 'foodType'];
+      basicFields.forEach(field => {
+        if (formData[field]) {
+          form.append(field, formData[field]);
         }
       });
+
+      // Handle image
+      if (formData.images instanceof File) {
+        form.append('images', formData.images);
+      }
+
+      // Handle objects that need to be stringified
+      if (formData.availability) {
+        form.append('availability', JSON.stringify(formData.availability));
+      }
+      if (formData.location) {
+        form.append('location', JSON.stringify(formData.location));
+      }
 
       const response = await api.post('/donations', form, {
         headers: {

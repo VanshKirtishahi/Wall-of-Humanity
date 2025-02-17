@@ -92,39 +92,46 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
+    // Initialize donation data
     const donationData = {
-      ...req.body,
+      type: req.body.type || 'Food',
+      title: req.body.title,
+      description: req.body.description,
+      quantity: req.body.quantity,
+      foodType: req.body.foodType,
       user: req.userId,
       userId: req.userId,
       donorName: req.user.name
     };
 
-    // Parse JSON strings back to objects
+    // Handle availability
     try {
       if (req.body.availability) {
-        donationData.availability = typeof req.body.availability === 'string' 
-          ? JSON.parse(req.body.availability)
-          : req.body.availability;
+        donationData.availability = JSON.parse(req.body.availability);
       }
-      
-      if (req.body.location) {
-        donationData.location = typeof req.body.location === 'string'
-          ? JSON.parse(req.body.location)
-          : req.body.location;
-      }
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      return res.status(400).json({ message: 'Invalid data format' });
+    } catch (e) {
+      console.error('Availability parsing error:', e);
+      return res.status(400).json({ message: 'Invalid availability format' });
     }
 
-    // Add image URL if image was uploaded
+    // Handle location
+    try {
+      if (req.body.location) {
+        donationData.location = JSON.parse(req.body.location);
+        if (!donationData.location.address || !donationData.location.city || !donationData.location.state) {
+          return res.status(400).json({ message: 'Location fields are required' });
+        }
+      } else {
+        return res.status(400).json({ message: 'Location is required' });
+      }
+    } catch (e) {
+      console.error('Location parsing error:', e);
+      return res.status(400).json({ message: 'Invalid location format' });
+    }
+
+    // Handle image
     if (req.file) {
       donationData.images = [req.file.path];
-    }
-
-    // Validate location fields based on schema
-    if (!donationData.location?.address || !donationData.location?.city || !donationData.location?.state) {
-      return res.status(400).json({ message: 'Location fields are required' });
     }
 
     const donation = new Donation(donationData);
