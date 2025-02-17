@@ -23,7 +23,9 @@ const DonationForm = () => {
     images: [],
     availability: {
       startTime: '',
+      startPeriod: 'AM',
       endTime: '',
+      endPeriod: 'PM',
       notes: ''
     },
     location: {
@@ -41,6 +43,11 @@ const DonationForm = () => {
     'Packaged Food',
     'Other'
   ];
+
+  const timeOptions = Array.from({ length: 12 }, (_, i) => {
+    const hour = (i + 1).toString().padStart(2, '0');
+    return [`${hour}:00`, `${hour}:30`];
+  }).flat();
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -65,7 +72,9 @@ const DonationForm = () => {
             images: donation.images || [],
             availability: {
               startTime: donation.availability?.startTime || '',
+              startPeriod: donation.availability?.startPeriod || 'AM',
               endTime: donation.availability?.endTime || '',
+              endPeriod: donation.availability?.endPeriod || 'PM',
               notes: donation.availability?.notes || ''
             },
             location: {
@@ -132,14 +141,59 @@ const DonationForm = () => {
 
   const updateImagePreview = (images) => {
     if (images && images.length > 0) {
-      const baseUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
-      setImagePreview(Array.isArray(images) 
-        ? `${baseUrl}/uploads/donations/${images[0]}`
-        : `${baseUrl}/uploads/donations/${images}`
-      );
+      const imageUrl = Array.isArray(images) ? images[0] : images;
+      // Check if the URL is a Cloudinary URL
+      if (imageUrl.includes('cloudinary.com')) {
+        setImagePreview(imageUrl);
+      } else {
+        // If not a Cloudinary URL, assume it's a local path
+        setImagePreview(`${import.meta.env.VITE_API_URL}/uploads/${imageUrl}`);
+      }
     } else {
       setImagePreview(DEFAULT_DONATION_IMAGE);
     }
+  };
+
+  const handleTimeChange = (e) => {
+    const { name, value } = e.target;
+    const timeField = name.split('.')[1];
+    
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [timeField]: value
+      }
+    }));
+  };
+
+  const handlePeriodChange = (e) => {
+    const { name, value } = e.target;
+    const periodField = name.split('.')[1];
+    
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [periodField]: value
+      }
+    }));
+  };
+
+  // Function to format time for display
+  const formatTimeForDisplay = (time, period) => {
+    if (!time) return '';
+    
+    const [hours, minutes] = time.split(':');
+    let hour = parseInt(hours);
+    
+    if (period === 'PM' && hour < 12) {
+      hour += 12;
+    } else if (period === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
   };
 
   const handleSubmit = async (e) => {
@@ -149,12 +203,22 @@ const DonationForm = () => {
     try {
       const formDataToSend = new FormData();
       
+      // Format availability time with periods
+      const formattedData = {
+        ...formData,
+        availability: {
+          ...formData.availability,
+          startTime: `${formData.availability.startTime} ${formData.availability.startPeriod}`,
+          endTime: `${formData.availability.endTime} ${formData.availability.endPeriod}`
+        }
+      };
+      
       // Add all form data except images
-      Object.keys(formData).forEach(key => {
+      Object.keys(formattedData).forEach(key => {
         if (key === 'availability' || key === 'location') {
-          formDataToSend.append(key, JSON.stringify(formData[key]));
+          formDataToSend.append(key, JSON.stringify(formattedData[key]));
         } else if (key !== 'images') {
-          formDataToSend.append(key, formData[key]);
+          formDataToSend.append(key, formattedData[key]);
         }
       });
       
@@ -173,7 +237,7 @@ const DonationForm = () => {
       toast.success(`Donation ${id ? 'updated' : 'created'} successfully!`);
       navigate('/my-donations');
     } catch (error) {
-      console.error('Submission error:', error);
+      console.error('Error submitting form:', error);
       toast.error(error.message || 'Failed to submit donation');
     } finally {
       setIsLoading(false);
@@ -287,26 +351,73 @@ const DonationForm = () => {
                     Please specify the time window when the food donation will be available for pickup
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-gray-700 mb-2">Start Time</label>
-                      <input
-                        type="time"
-                        name="availability.startTime"
-                        value={formData.availability.startTime}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="group flex-1">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          name="availability.startTime"
+                          value={formData.availability.startTime}
+                          onChange={handleTimeChange}
+                          className="block w-full rounded-lg border-purple-300 shadow-sm 
+                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                            hover:border-purple-400 transition-colors"
+                          required
+                        />
+                      </div>
+                      <div className="group">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                          Period
+                        </label>
+                        <select
+                          name="availability.startPeriod"
+                          value={formData.availability.startPeriod}
+                          onChange={handlePeriodChange}
+                          className="block w-full rounded-lg border-purple-300 shadow-sm 
+                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                            hover:border-purple-400 transition-colors"
+                        >
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-gray-700 mb-2">End Time</label>
-                      <input
-                        type="time"
-                        name="availability.endTime"
-                        value={formData.availability.endTime}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
+
+                    <div className="flex items-center gap-2">
+                      <div className="group flex-1">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          name="availability.endTime"
+                          value={formData.availability.endTime}
+                          onChange={handleTimeChange}
+                          className="block w-full rounded-lg border-purple-300 shadow-sm 
+                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                            hover:border-purple-400 transition-colors"
+                          required
+                        />
+                      </div>
+                      <div className="group">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                          Period
+                        </label>
+                        <select
+                          name="availability.endPeriod"
+                          value={formData.availability.endPeriod}
+                          onChange={handlePeriodChange}
+                          className="block w-full rounded-lg border-purple-300 shadow-sm 
+                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                            hover:border-purple-400 transition-colors"
+                        >
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 

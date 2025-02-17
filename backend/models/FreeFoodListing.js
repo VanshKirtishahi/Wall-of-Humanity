@@ -11,7 +11,17 @@ const freeFoodSchema = new mongoose.Schema({
     },
     specificDate: String,
     startTime: String,
-    endTime: String
+    startPeriod: {
+      type: String,
+      enum: ['AM', 'PM'],
+      default: 'AM'
+    },
+    endTime: String,
+    endPeriod: {
+      type: String,
+      enum: ['AM', 'PM'],
+      default: 'PM'
+    }
   },
   organizedBy: String,
   uploadedBy: {

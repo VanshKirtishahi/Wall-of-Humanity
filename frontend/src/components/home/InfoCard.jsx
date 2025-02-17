@@ -88,7 +88,7 @@ const InfoCard = ({ onNGORegistered }) => {
               />
             </svg>
           </div>
-          <h3 className="text-2xl font-bold mb-4 text-gray-800 group-hover:text-white">NGOs Partnership</h3>
+          <h3 className="text-2xl font-bold mb-4 text-gray-800 group-hover:text-white">NGO's Partnership</h3>
           <p className="text-gray-600 mb-4 group-hover:text-white">
             Partner with us to expand your reach and impact. We provide a platform 
             for NGOs to connect with donors and volunteers, streamlining the 

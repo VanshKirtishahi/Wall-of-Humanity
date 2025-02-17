@@ -1,38 +1,56 @@
 const express = require('express');
 const router = express.Router();
 const NGO = require('../models/NGO');
-const multer = require('multer');
-const path = require('path');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { deleteCloudinaryImage } = require('../utils/cloudinary');
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (file.fieldname === 'logo') {
-      cb(null, 'uploads/ngo-logos');
-    } else if (file.fieldname === 'certification') {
-      cb(null, 'uploads/ngo-certificates');
-    }
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary storage for NGO files
+const logoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'wall-of-humanity/ngo-logos',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    resource_type: 'image'
   }
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      cb(new Error('Invalid file type. Only JPEG, PNG and PDF files are allowed.'));
-    }
-    cb(null, true);
+const certificationStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'wall-of-humanity/ngo-certificates',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    resource_type: 'image'
   }
 });
+
+const logoUpload = multer({ storage: logoStorage });
+const certificationUpload = multer({ storage: certificationStorage });
+
+// Use both upload middlewares
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname);
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.fieldname === "logo" || file.fieldname === "certification") {
+      cb(null, true);
+    } else {
+      cb(new Error("Unexpected field"));
+    }
+  }
+}).fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'certification', maxCount: 1 }
+]);
 
 // Get all NGOs
 router.get('/', async (req, res) => {
@@ -53,52 +71,97 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Submit NGO registration
-router.post('/register', upload.fields([
-  { name: 'logo', maxCount: 1 },
-  { name: 'certification', maxCount: 1 }
-]), async (req, res) => {
+// Create NGO with Cloudinary upload
+router.post('/', auth, upload, async (req, res) => {
   try {
-    console.log('Received form data:', req.body); // Add logging
+    const ngoData = {
+      ...req.body,
+      userId: req.user._id
+    };
 
-    // Validate required fields
-    const requiredFields = ['organizationName', 'organizationEmail', 'phoneNumber', 'ngoType', 'address'];
-    for (const field of requiredFields) {
-      if (!req.body[field]) {
-        return res.status(400).json({ message: `${field} is required` });
+    if (req.files) {
+      if (req.files.logo) {
+        ngoData.logo = req.files.logo[0].path;
+      }
+      if (req.files.certification) {
+        ngoData.certification = req.files.certification[0].path;
       }
     }
 
-    const ngo = new NGO({
-      organizationName: req.body.organizationName,
-      organizationEmail: req.body.organizationEmail,
-      phoneNumber: req.body.phoneNumber,
-      contactPersonName: req.body.contactPersonName,
-      contactPersonEmail: req.body.contactPersonEmail,
-      contactPersonPhone: req.body.contactPersonPhone,
-      ngoType: req.body.ngoType,
-      incorporationDate: req.body.incorporationDate,
-      address: req.body.address,
-      ngoWebsite: req.body.ngoWebsite,
-      socialMediaLinks: req.body.socialMediaLinks,
-      logo: req.files?.logo?.[0]?.filename,
-      certification: req.files?.certification?.[0]?.filename,
-      status: 'pending'
-    });
-
+    const ngo = new NGO(ngoData);
     await ngo.save();
 
-    res.status(201).json({
-      message: 'NGO registration submitted successfully',
-      ngo: ngo
-    });
+    res.status(201).json(ngo);
   } catch (error) {
-    console.error('NGO registration error:', error);
-    if (error.code === 11000) {
-      res.status(400).json({ message: 'An NGO with this email already exists' });
-    } else {
-      res.status(400).json({ message: error.message });
+    console.error('Error creating NGO:', error);
+    
+    // Handle duplicate email error
+    if (error.code === 11000 && error.keyPattern?.organizationEmail) {
+      return res.status(400).json({ 
+        message: 'An NGO with this email address already exists. Please use a different email.' 
+      });
     }
+
+    // Handle other errors
+    res.status(500).json({ 
+      message: error.message || 'An error occurred while creating the NGO' 
+    });
+  }
+});
+
+// Update NGO
+router.put('/:id', auth,
+  async (req, res) => {
+    try {
+      const ngo = await NGO.findById(req.params.id);
+      if (!ngo) {
+        return res.status(404).json({ message: 'NGO not found' });
+      }
+
+      if (ngo.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
+
+      const updateData = { ...req.body };
+
+      const updatedNGO = await NGO.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      res.json(updatedNGO);
+    } catch (error) {
+      console.error('Error updating NGO:', error);
+      res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete NGO
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const ngo = await NGO.findById(req.params.id);
+    if (!ngo) {
+      return res.status(404).json({ message: 'NGO not found' });
+    }
+
+    if (ngo.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Delete images from Cloudinary
+    if (ngo.logo) {
+      await deleteCloudinaryImage(ngo.logo);
+    }
+    if (ngo.certification) {
+      await deleteCloudinaryImage(ngo.certification);
+    }
+
+    await ngo.deleteOne();
+    res.json({ message: 'NGO removed' });
+  } catch (error) {
+    console.error('Error deleting NGO:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 

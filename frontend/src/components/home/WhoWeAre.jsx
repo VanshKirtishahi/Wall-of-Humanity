@@ -17,12 +17,14 @@ const WhoWeAre = () => {
 
           {/* Content Section */}
           <div className="space-y-6">
-            <h2 className="text-4xl font-bold text-gray-900">Who we are?</h2>
+            <h2 className="text-4xl font-bold text-gray-900">Who We Are</h2>
             <p className="text-lg text-gray-600 leading-relaxed">
-              The legal definition of a charitable organization (and of charity) 
-              varies between countries and in some instances regions of the country. 
-              The regulation, the tax treatment, and the way in which charity law 
-              affects charitable organizations also vary.
+              We are a passionate community dedicated to bridging the gap between 
+              those who want to help and those in need. Our platform connects donors, 
+              volunteers, and NGOs to create meaningful impact in communities across 
+              the country. Through technology and compassion, we're building a more 
+              equitable world where resources can be shared efficiently and dignity 
+              preserved.
             </p>
             <a
               href="/about"

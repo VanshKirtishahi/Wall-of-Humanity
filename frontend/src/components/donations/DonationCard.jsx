@@ -99,28 +99,8 @@ const DonationCard = ({ donation, onDelete, onEdit, isMyDonation = false }) => {
   );
 
   const getImageUrl = (imagePath) => {
-    try {
-      if (!imagePath || (Array.isArray(imagePath) && !imagePath.length)) {
-        return DEFAULT_DONATION_IMAGE;
-      }
-      
-      // Check if the image path is already a full URL
-      if (typeof imagePath === 'string' && imagePath.startsWith('http')) {
-        return imagePath;
-      }
-
-      // Get the backend URL from environment variables
-      const backendUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:5000';
-      const imagePathToUse = Array.isArray(imagePath) ? imagePath[0] : imagePath;
-      
-      // Ensure the path is properly formatted
-      const formattedPath = imagePathToUse.replace(/\\/g, '/');
-      const imageUrl = `${backendUrl}/uploads/donations/${formattedPath}`;
-      return imageUrl;
-    } catch (error) {
-      console.error('Error processing image URL:', error);
-      return DEFAULT_DONATION_IMAGE;
-    }
+    if (!imagePath) return DEFAULT_DONATION_IMAGE;
+    return imagePath; // Cloudinary already provides full URLs
   };
 
   return (

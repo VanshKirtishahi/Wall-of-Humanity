@@ -10,6 +10,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const emailService = require('../services/email.service');
+const cloudinary = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { avatarUpload } = require('../config/cloudinary');
 
 // Configure multer for avatar uploads
 const storage = multer.diskStorage({
@@ -22,18 +25,15 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Not an image! Please upload an image.'), false);
+const uploadMulter = multer({
+  storage: new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'avatars',
+      allowed_formats: ['jpg', 'png', 'jpeg'],
+      transformation: [{ width: 500, height: 500, crop: 'fill' }]
     }
-  }
+  })
 });
 
 // Test route to verify auth routes are working
@@ -227,33 +227,54 @@ router.get('/verify', auth, async (req, res) => {
 });
 
 // Update profile route
-router.put('/profile', auth, upload.single('avatar'), async (req, res) => {
+router.put('/profile', auth, avatarUpload.single('avatar'), async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update fields if provided
-    if (req.body.name) user.name = req.body.name;
-    if (req.body.email) user.email = req.body.email;
-    if (req.body.bio) user.bio = req.body.bio;
-    if (req.body.phone) user.phone = req.body.phone;
-    if (req.body.address) user.address = req.body.address;
-    
     // Handle avatar upload
     if (req.file) {
-      user.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      try {
+        // Delete old avatar if exists
+        if (user.avatarUrl && user.avatarUrl.includes('cloudinary')) {
+          const publicId = user.avatarUrl.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(`wall-of-humanity/avatars/${publicId}`);
+        }
+        req.body.avatarUrl = req.file.path;
+      } catch (deleteError) {
+        console.error('Error handling avatar:', deleteError);
+      }
     }
 
-    const updatedUser = await user.save();
-    const userResponse = updatedUser.toObject();
-    delete userResponse.password;
-    
-    res.json(userResponse);
+    // Update user data
+    const updateData = {
+      name: req.body.name,
+      email: req.body.email,
+      bio: req.body.bio,
+      phone: req.body.phone,
+      address: req.body.address
+    };
+
+    if (req.body.avatarUrl) {
+      updateData.avatarUrl = req.body.avatarUrl;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Failed to update user' });
+    }
+
+    res.json(updatedUser);
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Failed to update profile' });
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 

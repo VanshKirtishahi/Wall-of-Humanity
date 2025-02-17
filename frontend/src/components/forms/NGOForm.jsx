@@ -9,10 +9,7 @@ import Swal from 'sweetalert2';
 
 const NGOForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { register } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     organizationName: '',
     organizationEmail: '',
@@ -45,10 +42,9 @@ const NGOForm = () => {
           return;
         }
         
-        // Check file type
-        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        if (!allowedTypes.includes(file.type)) {
-          toast.error('File type must be PDF, JPG, or PNG');
+        // Check file type (only images)
+        if (!file.type.startsWith('image/')) {
+          toast.error('Please upload only image files (JPG, PNG)');
           e.target.value = '';
           return;
         }
@@ -95,50 +91,22 @@ const NGOForm = () => {
 
     try {
       setIsSubmitting(true);
-      toast.info('Submitting your NGO registration...');
-      
       const response = await ngoService.registerNGO(formData);
 
-      if (response.ngo) {
-        toast.success('NGO registration completed! Welcome aboard!');
-        setFormData({
-          organizationName: '',
-          organizationEmail: '',
-          password: '',
-          phoneNumber: '',
-          contactPersonName: '',
-          contactPersonEmail: '',
-          contactPersonPhone: '',
-          ngoWebsite: '',
-          ngoType: '',
-          incorporationDate: new Date(),
-          address: '',
-          socialMediaLinks: '',
-          logo: null,
-          certification: null,
-          socialPosts: false,
-          termsAccepted: false
-        });
-        
-        // Show thank you message and navigate
-        Swal.fire({
-          title: 'Thank You!',
-          text: 'Your NGO registration has been submitted successfully. We will review your application and get back to you soon.',
-          icon: 'success',
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#6B46C1'
-        }).then(() => {
-          navigate('/', { 
-            state: { 
-              registrationSuccess: true,
-              message: 'NGO registration completed successfully!' 
-            }
-          });
-        });
-      }
+      // Show success message with SweetAlert
+      await Swal.fire({
+        icon: 'success',
+        title: 'Registration Successful!',
+        text: 'Your NGO has been registered successfully. We will review your application and get back to you soon.',
+        confirmButtonColor: '#6B46C1',
+      });
+
+      // Navigate to home page or dashboard
+      navigate('/');
+      
     } catch (error) {
       console.error('Error registering NGO:', error);
-      toast.error(error.response?.data?.message || error.message || 'Error registering NGO');
+      toast.error(error.message || 'Failed to register NGO');
     } finally {
       setIsSubmitting(false);
     }
@@ -378,14 +346,14 @@ const NGOForm = () => {
                   <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
                     NGO Logo <span className="text-red-500">*</span>
                     <span className="text-sm text-gray-500 block">
-                      (PDF, JPG, JPEG, PNG - Max 2MB)
+                      (JPG, PNG - Max 2MB)
                     </span>
                   </label>
                   <input
                     type="file"
                     name="logo"
                     onChange={handleChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept=".jpg,.png"
                     className="block w-full rounded-lg border-purple-300 shadow-sm 
                       focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                       hover:border-purple-400 transition-colors"
@@ -397,14 +365,14 @@ const NGOForm = () => {
                   <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
                     Certification Document <span className="text-red-500">*</span>
                     <span className="text-sm text-gray-500 block">
-                      (PDF, JPG, JPEG, PNG - Max 2MB)
+                      (Upload your NGO certification as an image - JPG, PNG only, Max 2MB)
                     </span>
                   </label>
                   <input
                     type="file"
                     name="certification"
                     onChange={handleChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept=".jpg,.png"
                     className="block w-full rounded-lg border-purple-300 shadow-sm 
                       focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                       hover:border-purple-400 transition-colors"

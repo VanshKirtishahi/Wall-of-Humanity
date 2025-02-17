@@ -2,6 +2,7 @@ import React from 'react';
 import { formatFullAddress } from '../../utils/locationUtils';
 import { toast } from 'react-toastify';
 import { DEFAULT_VENUE_IMAGE } from '../../constants/images';
+import { FiClock } from 'react-icons/fi';
 
 const FreeFoodCard = ({ freeFood, isOwner, onEdit, onDelete, showControls = true, isListing = false }) => {
   const handleGetLocation = () => {
@@ -26,24 +27,30 @@ const FreeFoodCard = ({ freeFood, isOwner, onEdit, onDelete, showControls = true
   };
 
   const getImageUrl = (imagePath) => {
-    try {
-      if (!imagePath) return DEFAULT_VENUE_IMAGE;
-      const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api$/, '');
-      const filename = imagePath.replace(/\s+/g, '-');
-      return `${baseUrl}/uploads/free-food/${filename}`;
-    } catch (error) {
-      console.error('Error processing venue image URL:', error);
-      return DEFAULT_VENUE_IMAGE;
+    if (!imagePath) return DEFAULT_VENUE_IMAGE;
+    // If it's already a Cloudinary URL, return it as is
+    if (imagePath.includes('cloudinary.com')) {
+      return imagePath;
     }
+    return DEFAULT_VENUE_IMAGE;
   };
 
   const formatAvailability = () => {
-    const { type, startTime, endTime, specificDate } = freeFood.availability || {};
+    // Parse availability if it's a string
+    let availability = freeFood.availability;
     
+    try {
+      if (typeof freeFood.availability === 'string') {
+        availability = JSON.parse(freeFood.availability);
+      }
+    } catch (error) {
+      console.error('Error parsing availability:', error);
+    }
+
     let availabilityText = '';
-    switch (type) {
+    switch (availability?.type) {
       case 'specific':
-        const date = specificDate ? new Date(specificDate).toLocaleDateString() : 'Not specified';
+        const date = availability.specificDate ? new Date(availability.specificDate).toLocaleDateString() : 'Not specified';
         availabilityText = `${date}`;
         break;
       case 'weekdays':
@@ -60,12 +67,21 @@ const FreeFoodCard = ({ freeFood, isOwner, onEdit, onDelete, showControls = true
     }
 
     return (
-      <div className="flex flex-col">
-        <span className="text-sm font-medium">{availabilityText}</span>
-        {startTime && endTime && (
-          <span className="text-sm">
-            {startTime} - {endTime}
-          </span>
+      <div className="flex flex-col space-y-3">
+        <div className="space-y-1">
+          <span className="text-sm font-medium">{availabilityText}</span>
+          {availability?.startTime && availability?.endTime && (
+            <span className="text-sm block">
+              {`${availability.startTime} ${availability.startPeriod} - ${availability.endTime} ${availability.endPeriod}`}
+            </span>
+          )}
+        </div>
+        
+        {availability?.notes && availability.notes.trim() !== '' && (
+          <div className="mt-2 text-sm bg-purple-50 p-3 rounded-lg border border-purple-100">
+            <p className="font-bold text-purple-700 mb-1">Additional Notes:</p>
+            <p className="text-gray-700 whitespace-pre-wrap">{availability.notes}</p>
+          </div>
         )}
       </div>
     );
@@ -119,6 +135,14 @@ const FreeFoodCard = ({ freeFood, isOwner, onEdit, onDelete, showControls = true
             {formatFullAddress(freeFood.location)}
           </div>
         </div>
+
+        {/* Add notes display */}
+        {freeFood.availability?.notes && (
+          <div className="px-4 py-2 text-gray-600">
+            <p className="font-medium">Notes:</p>
+            <p>{freeFood.availability.notes}</p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="mt-4">

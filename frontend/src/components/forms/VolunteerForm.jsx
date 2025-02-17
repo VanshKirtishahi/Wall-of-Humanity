@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
-import { volunteerService } from "../../services/volunteer.service";
+import volunteerService from "../../services/volunteer.service";
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 

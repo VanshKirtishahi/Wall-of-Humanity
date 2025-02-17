@@ -35,7 +35,7 @@ const Login = () => {
 
       await login({ email, password });
       toast.success('Login successful!');
-      navigate('/profile');
+      navigate('/');
     } catch (err) {
       console.error('Login error:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';

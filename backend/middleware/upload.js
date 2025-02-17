@@ -1,38 +1,79 @@
 const multer = require('multer');
-const path = require('path');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Determine the destination based on the route
-    const folder = req.baseUrl.includes('free-food') ? 'free-food' : 'donations';
-    cb(null, path.join(__dirname, `../uploads/${folder}`));
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '-');
-    if (req.fileNames) {
-      req.fileNames.push(filename);
-    } else {
-      req.fileNames = [filename];
+const createStorage = (folderPath) => {
+  return new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: `wall-of-humanity/${folderPath}`,
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
+      transformation: [{ width: 1000, crop: 'limit' }],
+      format: 'jpg',
+      resource_type: 'auto',
+      public_id: (req, file) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        return `${uniqueSuffix}`;
+      }
     }
-    cb(null, filename);
-  }
-});
+  });
+};
 
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Not an image! Please upload an image.'), false);
+const donationStorage = createStorage('donations');
+const freeFoodStorage = createStorage('free-food');
+const ngoLogoStorage = createStorage('ngo-logos');
+const ngoCertificateStorage = createStorage('ngo-certificates');
+
+const uploadConfig = {
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not an image! Please upload an image.'), false);
+    }
   }
 };
 
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+const donationUpload = multer({
+  storage: donationStorage,
+  ...uploadConfig
+});
+
+const freeFoodUpload = multer({
+  storage: freeFoodStorage,
+  ...uploadConfig
+});
+
+// Add NGO upload configurations
+const ngoLogoUpload = multer({
+  storage: ngoLogoStorage,
+  ...uploadConfig,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Logo must be an image file!'), false);
+    }
   }
 });
 
-module.exports = upload; 
+const ngoCertificateUpload = multer({
+  storage: ngoCertificateStorage,
+  ...uploadConfig,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Certificate must be a PDF, JPEG, or PNG file!'), false);
+    }
+  }
+});
+
+module.exports = {
+  donationUpload,
+  freeFoodUpload,
+  ngoLogoUpload,
+  ngoCertificateUpload
+}; 

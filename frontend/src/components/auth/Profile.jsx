@@ -44,8 +44,9 @@ const Profile = () => {
           phone: data.phone || '',
           address: data.address || ''
         });
+        
         if (data.avatarUrl) {
-          setAvatarPreview(`${import.meta.env.VITE_API_URL}${data.avatarUrl}`);
+          setAvatarPreview(data.avatarUrl);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -82,13 +83,12 @@ const Profile = () => {
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
       
       setAvatar(file);
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result);
@@ -101,12 +101,15 @@ const Profile = () => {
     e.preventDefault();
     try {
       const formData = new FormData();
+      
+      // Add all edited data to FormData
       Object.keys(editedData).forEach(key => {
         if (editedData[key] !== undefined && editedData[key] !== null) {
           formData.append(key, editedData[key]);
         }
       });
       
+      // Add avatar if it exists
       if (avatar) {
         formData.append('avatar', avatar);
       }
@@ -117,15 +120,20 @@ const Profile = () => {
         }
       });
 
-      // Update local state and context
+      // Update states with response data
       setProfileData(response.data);
       if (response.data.avatarUrl) {
-        setAvatarPreview(`${import.meta.env.VITE_API_URL}${response.data.avatarUrl}`);
+        setAvatarPreview(response.data.avatarUrl);
+        setAvatar(null);
       }
       
-      // Update user context
+      // Update localStorage
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const updatedUser = { ...currentUser, ...response.data };
+      const updatedUser = { 
+        ...currentUser, 
+        ...response.data,
+        token: currentUser.token // Preserve the token
+      };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
       setIsEditing(false);
@@ -171,11 +179,12 @@ const Profile = () => {
     return isValid(date) ? format(date, 'MMM dd, yyyy') : 'Invalid date';
   };
 
-  const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return defaultAvatar;
-    return avatarPath.startsWith('data:') 
-      ? avatarPath 
-      : `${import.meta.env.VITE_API_URL}${avatarPath}`;
+  const getAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return defaultAvatar;
+    if (avatarUrl.startsWith('data:')) return avatarUrl;
+    if (avatarUrl.startsWith('http')) return avatarUrl;
+    if (avatarUrl.includes('cloudinary')) return avatarUrl;
+    return defaultAvatar;
   };
 
   if (loading) {

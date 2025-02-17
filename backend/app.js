@@ -4,17 +4,19 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// CORS configuration
-app.use(cors({
-  origin: ['https://wall-of-humanity.vercel.app', 'http://localhost:5173'],
+// CORS Configuration
+const corsOptions = {
+  origin: 'http://localhost:5173' || 'https://wall-of-humanity.vercel.app',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(express.json());
@@ -36,11 +38,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/donations', require('./routes/donationRoutes'));
 app.use('/api/free-food', require('./routes/freeFoodRoutes'));
+app.use('/api/volunteers', require('./routes/volunteerRoutes'));
 
-// Error handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
+// Add this after all your routes
+app.use(errorHandler);
 
 module.exports = app;

@@ -14,19 +14,29 @@ const requestRoutes = require('./routes/requestRoutes');
 const volunteerRoutes = require('./routes/volunteerRoutes');
 const ngoRoutes = require('./routes/ngoRoutes');
 const userRoutes = require('./routes/userRoutes');
-const debugLogger = require('./middleware/debugLogger');
 const emailRoutes = require('./routes/emailRoutes');
 const freeFoodRoutes = require('./routes/freeFoodRoutes');
 const app = require('./app');
+const morgan = require('morgan');
 
 // Connect to database
 mongoose.connection.once('open', () => {
   console.log('MongoDB Connected:', mongoose.connection.host);
 });
 
+// CORS configuration
+const corsOptions = {
+  origin: 'http://localhost:5173' || 'https://wall-of-humanity.vercel.app', // Your frontend URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors(corsOptions));
+app.use(morgan('dev')); // Logs HTTP requests
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true}));
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -44,57 +54,9 @@ uploadDirs.forEach(dir => {
   }
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/donations');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024 // 2MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
-    cb(new Error('Only .png, .jpg, .jpeg and .pdf formats allowed!'));
-  }
-});
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Add logging middleware
-app.use('/uploads', (req, res, next) => {
-  console.log('Static file request:', req.path);
-  console.log('Full path:', path.join(__dirname, 'uploads', req.path));
-  next();
-});
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 const freeFoodUploadsDir = path.join(__dirname, 'uploads', 'free-food');
 if (!fs.existsSync(freeFoodUploadsDir)){
     fs.mkdirSync(freeFoodUploadsDir, { recursive: true });
-}
-
-// Move debug logger before routes
-if (process.env.NODE_ENV === 'development') {
-  app.use(debugLogger);
 }
 
 // Then mount routes
@@ -168,4 +130,9 @@ process.on('unhandledRejection', (err) => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
   console.log(err.name, err.message);
   process.exit(1);
+});
+
+app.use('/uploads', (req, res, next) => {
+    console.log(`[${new Date().toISOString()}] Static file request: ${req.path}`);
+    next();
 });

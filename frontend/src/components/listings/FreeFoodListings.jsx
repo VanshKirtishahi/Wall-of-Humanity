@@ -19,7 +19,7 @@ const FreeFoodListings = () => {
 
   const fetchListings = async () => {
     try {
-      const response = await api.get('/free-food');
+      const response = await api.get('/api/free-food');
       setListings(response.data);
       setError(null);
     } catch (err) {
@@ -49,10 +49,12 @@ const FreeFoodListings = () => {
 
     if (window.confirm('Are you sure you want to delete this listing?')) {
       try {
-        await api.delete(`/free-food/${id}`);
         setListings(prevListings => prevListings.filter(listing => listing._id !== id));
+        await api.delete(`/free-food/${id}`);
         toast.success('Listing deleted successfully');
       } catch (error) {
+        // Rollback on error
+        setListings(prevListings => [...prevListings, listing]);
         console.error('Delete error:', error);
         toast.error('Failed to delete listing');
       }

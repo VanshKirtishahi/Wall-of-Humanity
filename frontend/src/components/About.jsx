@@ -138,8 +138,7 @@ const About = () => {
               <div className="text-purple-600 text-4xl mb-4">🤝</div>
               <h3 className="text-xl font-semibold mb-2">Our Growth</h3>
               <p className="text-gray-600">
-                Through partnerships with NGOs and dedicated volunteers, we've expanded 
-                our reach to help thousands of people across multiple cities.
+              Through strategic partnerships with NGOs and the support of dedicated volunteers, we plan to expand our reach and assist thousands of people across multiple cities
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
@@ -187,9 +186,7 @@ const About = () => {
             <div className="bg-white p-8 rounded-lg shadow-md">
               <h2 className="text-3xl font-bold text-purple-600 mb-6">Our Mission</h2>
               <p className="text-gray-600 leading-relaxed mb-6">
-                To create a world where everyone has access to basic necessities and 
-                opportunities for growth. Through our platform, we connect donors with 
-                those in need, making it easier for communities to support each other.
+                To create a world where no one goes without basic necessities by connecting those with excess resources to those in need. Through our platform, we make it easy for organizations, restaurants, and individuals to share their surplus food, clothing, hygiene products and other essential items with the community, reducing waste while helping those facing hardship and insecurity.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-center text-gray-600">
@@ -215,9 +212,7 @@ const About = () => {
             <div className="bg-white p-8 rounded-lg shadow-md">
               <h2 className="text-3xl font-bold text-purple-600 mb-6">Our Vision</h2>
               <p className="text-gray-600 leading-relaxed mb-6">
-                We envision a future where no one has to struggle for basic necessities, 
-                where communities are empowered to help each other, and where technology 
-                bridges the gap between those who want to help and those who need it.
+                We are dedicated to serving underprivileged communities, ensuring that no one goes hungry or lacks basic necessities. Our efforts focus on creating a self-sustaining support ecosystem where communities empower each other, and technology acts as a bridge to connect donors with individuals seeking assistance. Through our platform, we aim to expand our reach to more cities and communities, ensuring that free food and essential resources are accessible to everyone requiring support.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-center text-gray-600">

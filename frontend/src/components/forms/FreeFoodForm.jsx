@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../../config/axios';
+import freeFoodService from '../../services/freeFood.service';
 
 const FreeFoodForm = () => {
   const { id } = useParams();
@@ -21,8 +22,11 @@ const FreeFoodForm = () => {
     availability: {
       type: 'specific',
       startTime: '',
+      startPeriod: 'AM',
       endTime: '',
-      specificDate: new Date().toISOString().split('T')[0]
+      endPeriod: 'PM',
+      specificDate: new Date().toISOString().split('T')[0],
+      notes: ''
     },
     organizedBy: '',
     uploadedBy: user?._id || '',
@@ -32,10 +36,7 @@ const FreeFoodForm = () => {
       area: '',
       city: '',
       state: '',
-      coordinates: {
-        lat: null,
-        lng: null
-      }
+      coordinates: null
     }
   });
 
@@ -79,8 +80,11 @@ const FreeFoodForm = () => {
         availability: {
           type: listing.availability?.type || 'specific',
           startTime: listing.availability?.startTime || '',
+          startPeriod: listing.availability?.startPeriod || 'AM',
           endTime: listing.availability?.endTime || '',
-          specificDate: formattedDate
+          endPeriod: listing.availability?.endPeriod || 'PM',
+          specificDate: formattedDate,
+          notes: listing.availability?.notes || ''
         },
         organizedBy: listing.organizedBy || '',
         uploadedBy: listing.uploadedBy || user?._id || '',
@@ -101,7 +105,7 @@ const FreeFoodForm = () => {
 
       // Set image preview if exists
       if (listing.venueImage) {
-        setImagePreview(`${api.defaults.baseURL}/uploads/free-food/${listing.venueImage}`);
+        setImagePreview(listing.venueImage);
       }
     } catch (error) {
       console.error('Error fetching listing:', error);
@@ -143,67 +147,113 @@ const FreeFoodForm = () => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, venueImage: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      e.target.value = '';
+      return;
     }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload only image files (JPG, PNG)');
+      e.target.value = '';
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+
+    setFormData(prev => ({
+      ...prev,
+      venueImage: file
+    }));
+  };
+
+  const handleTimeChange = (e) => {
+    const { name, value } = e.target;
+    const timeField = name.split('.')[1];
+    
+    // Convert time to 24-hour format
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [timeField]: value
+      }
+    }));
+  };
+
+  const handlePeriodChange = (e) => {
+    const { name, value } = e.target;
+    const periodField = name.split('.')[1];
+    
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [periodField]: value
+      }
+    }));
+  };
+
+  const formatTimeForDisplay = (time, period) => {
+    if (!time) return '';
+    
+    const [hours, minutes] = time.split(':');
+    let hour = parseInt(hours);
+    
+    if (period === 'PM' && hour < 12) {
+      hour += 12;
+    } else if (period === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    const formDataToSend = new FormData();
-    
-    Object.keys(formData).forEach(key => {
-      if (key === 'venueImage') {
-        if (formData[key]) {
-          formDataToSend.append('venueImage', formData[key]);
-        }
-      } else if (key === 'availability' || key === 'location') {
-        formDataToSend.append(key, JSON.stringify(formData[key]));
-      } else {
-        formDataToSend.append(key, formData[key]);
-      }
-    });
-
     try {
-      let response;
-      if (id) {
-        response = await api.put(`/api/free-food/${id}`, formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Free food listing updated successfully!');
-      } else {
-        response = await api.post('/api/free-food', formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Free food listing created successfully!');
+      setIsLoading(true);
+      
+      // Validate required fields
+      const requiredFields = ['venue', 'foodType', 'organizedBy'];
+      const missingFields = requiredFields.filter(field => !formData[field]);
+      
+      if (missingFields.length > 0) {
+        toast.error(`Please fill in: ${missingFields.join(', ')}`);
+        return;
       }
 
-      // Update image preview if new image was uploaded
-      if (response.data.venueImage) {
-        setImagePreview(`${api.defaults.baseURL}/uploads/free-food/${response.data.venueImage}`);
-      }
-
-      navigate('/free-food', { 
-        state: { 
-          listingSuccess: true, 
-          message: id ? 'Listing updated successfully!' : 'Listing created successfully!' 
+      // Ensure notes are properly included
+      const submissionData = {
+        ...formData,
+        availability: {
+          ...formData.availability,
+          notes: formData.availability.notes || ''  // Ensure notes are included
         }
-      });
+      };
+
+      if (id) {
+        await freeFoodService.updateListing(id, submissionData);
+        toast.success('Listing updated successfully!');
+      } else {
+        await freeFoodService.createListing(submissionData);
+        toast.success('Listing created successfully!');
+      }
+      
+      navigate('/free-food');
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error(id ? 'Failed to update listing' : 'Failed to create listing');
+      console.error('Submission error:', error);
+      toast.error(error.message || 'Failed to save listing');
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 mt-16">
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-purple-100">
@@ -371,29 +421,90 @@ const FreeFoodForm = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-purple-700">Start Time</label>
-                  <input
-                    type="time"
-                    name="availability.startTime"
-                    value={formData.availability.startTime}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-lg border-purple-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-2"
-                    required
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="group flex-1">
+                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      name="availability.startTime"
+                      value={formData.availability.startTime}
+                      onChange={handleTimeChange}
+                      className="block w-full rounded-lg border-purple-300 shadow-sm 
+                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                        hover:border-purple-400 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="group">
+                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                      Period
+                    </label>
+                    <select
+                      name="availability.startPeriod"
+                      value={formData.availability.startPeriod}
+                      onChange={handlePeriodChange}
+                      className="block w-full rounded-lg border-purple-300 shadow-sm 
+                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                        hover:border-purple-400 transition-colors"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-purple-700">End Time</label>
-                  <input
-                    type="time"
-                    name="availability.endTime"
-                    value={formData.availability.endTime}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-lg border-purple-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-2"
-                    required
-                  />
+
+                <div className="flex items-center gap-2">
+                  <div className="group flex-1">
+                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      name="availability.endTime"
+                      value={formData.availability.endTime}
+                      onChange={handleTimeChange}
+                      className="block w-full rounded-lg border-purple-300 shadow-sm 
+                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                        hover:border-purple-400 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="group">
+                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                      Period
+                    </label>
+                    <select
+                      name="availability.endPeriod"
+                      value={formData.availability.endPeriod}
+                      onChange={handlePeriodChange}
+                      className="block w-full rounded-lg border-purple-300 shadow-sm 
+                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                        hover:border-purple-400 transition-colors"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-purple-700 mb-1.5">
+                  <span className="font-bold">Notes</span>
+                </label>
+                <textarea
+                  name="availability.notes"
+                  value={formData.availability.notes}
+                  onChange={handleChange}
+                  placeholder="Any special instructions about pickup times or location..."
+                  className="block w-full rounded-lg border-purple-300 shadow-sm 
+                    focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                    hover:border-purple-400 transition-colors"
+                  rows="3"
+                />
               </div>
             </div>
           </div>
@@ -405,34 +516,37 @@ const FreeFoodForm = () => {
               Venue Image
             </h3>
             <div className="space-y-4">
-              <div className="flex justify-center items-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-purple-300 border-dashed rounded-lg cursor-pointer hover:bg-purple-50 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                id="venueImage"
+              />
+              <label 
+                htmlFor="venueImage"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-purple-300 border-dashed rounded-lg cursor-pointer hover:bg-purple-50 transition-colors"
+              >
+                {imagePreview ? (
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={imagePreview}
+                      alt="Venue preview"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  </div>
+                ) : (
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <svg className="w-8 h-8 mb-4 text-purple-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                       <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                     </svg>
-                    <p className="mb-2 text-sm text-purple-600">
+                    <p className="mb-2 text-sm text-purple-500">
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs text-purple-500">PNG, JPG or GIF (MAX. 5MB)</p>
+                    <p className="text-xs text-purple-500">PNG, JPG (MAX. 5MB)</p>
                   </div>
-                  <input 
-                    type="file"
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              {imagePreview && (
-                <div className="mt-4">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="h-48 w-full object-cover rounded-lg shadow-md" 
-                  />
-                </div>
-              )}
+                )}
+              </label>
             </div>
           </div>
 

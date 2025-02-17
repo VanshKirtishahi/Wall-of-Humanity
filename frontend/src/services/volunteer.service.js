@@ -1,14 +1,14 @@
-import api from './api';
+import api from '../config/axios';
 
-class VolunteerService {
-  async register(formData) {
+const volunteerService = {
+  register: async (volunteerData) => {
     try {
-      const response = await api.post('/volunteers', formData);
+      const response = await api.post('/volunteers', volunteerData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to register volunteer' };
     }
   }
-}
+};
 
-export const volunteerService = new VolunteerService();
+export default volunteerService;

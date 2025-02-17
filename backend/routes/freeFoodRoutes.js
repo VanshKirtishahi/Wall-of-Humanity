@@ -1,82 +1,59 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 const auth = require('../middleware/auth');
 const FreeFoodListing = require('../models/FreeFoodListing');
-const fs = require('fs').promises;
-const { deleteUploadedImage } = require('../utils/fileUtils');
+const { upload } = require('../config/cloudinary');
+const { deleteCloudinaryImage } = require('../utils/cloudinary');
 
 const router = express.Router();
 
-// Configure multer for image upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads/free-food'));
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'venue-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Only image files are allowed!'));
-  }
-});
-
-const handleMulterError = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File size too large. Maximum size is 5MB' });
-    }
-    return res.status(400).json({ message: err.message });
-  } else if (err) {
-    return res.status(400).json({ message: err.message });
-  }
-  next();
-};
-
 // Create new listing with image upload
-router.post('/', auth, upload.single('venueImage'), handleMulterError, async (req, res) => {
+router.post('/', auth, upload.single('venueImage'), async (req, res) => {
   try {
+    console.log('Request body:', req.body);
+    console.log('File:', req.file);
+
+    if (!req.body.venue || !req.body.foodType) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
+
     const listingData = {
       ...req.body,
       uploadedBy: req.user._id
     };
 
     // Parse JSON strings back to objects
-    if (req.body.availability) {
-      listingData.availability = JSON.parse(req.body.availability);
-    }
-    if (req.body.location) {
-      listingData.location = JSON.parse(req.body.location);
+    try {
+      if (req.body.availability) {
+        const availability = JSON.parse(req.body.availability);
+        listingData.availability = {
+          ...availability,
+          notes: availability.notes || ''  // Ensure notes field exists
+        };
+      }
+      if (req.body.location) {
+        listingData.location = JSON.parse(req.body.location);
+      }
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      return res.status(400).json({ message: 'Invalid data format' });
     }
 
-    // Add image path if image was uploaded
+    // Add Cloudinary image URL if image was uploaded
     if (req.file) {
-      listingData.venueImage = req.file.filename;
-      console.log('Saved image filename:', req.file.filename);
-      console.log('Full image path:', path.join('uploads/free-food', req.file.filename));
+      listingData.venueImage = req.file.path;
     }
 
     const listing = new FreeFoodListing(listingData);
     await listing.save();
+    
+    console.log('Created listing:', listing);
     res.status(201).json(listing);
   } catch (error) {
     console.error('Error creating free food listing:', error);
-    res.status(500).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -107,7 +84,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update listing
-router.put('/:id', auth, upload.single('venueImage'), handleMulterError, async (req, res) => {
+router.put('/:id', auth, upload.single('venueImage'), async (req, res) => {
   try {
     const listing = await FreeFoodListing.findById(req.params.id);
     if (!listing) {
@@ -121,20 +98,36 @@ router.put('/:id', auth, upload.single('venueImage'), handleMulterError, async (
     const listingData = { ...req.body };
     
     // Parse JSON fields
-    if (req.body.availability) {
-      listingData.availability = JSON.parse(req.body.availability);
+    try {
+      if (req.body.availability) {
+        listingData.availability = JSON.parse(req.body.availability);
+      }
+      if (req.body.location) {
+        listingData.location = JSON.parse(req.body.location);
+      }
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid JSON data' });
     }
-    if (req.body.location) {
-      listingData.location = JSON.parse(req.body.location);
-    }
-    
+
     // Handle image update
     if (req.file) {
-      // Delete old image if exists
+      // Delete old image if it exists
       if (listing.venueImage) {
-        await deleteUploadedImage(listing.venueImage, 'free-food');
+        try {
+          await deleteCloudinaryImage(listing.venueImage);
+        } catch (cloudinaryError) {
+          console.error('Error deleting old image:', cloudinaryError);
+        }
       }
-      listingData.venueImage = req.file.filename;
+      listingData.venueImage = req.file.path;
+    } else if (req.body.deleteImage === 'true' && listing.venueImage) {
+      // Handle image deletion without replacement
+      try {
+        await deleteCloudinaryImage(listing.venueImage);
+        listingData.venueImage = null;
+      } catch (cloudinaryError) {
+        console.error('Error deleting image:', cloudinaryError);
+      }
     }
 
     const updatedListing = await FreeFoodListing.findByIdAndUpdate(
@@ -163,16 +156,19 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this listing' });
     }
 
-    // Delete image if exists
+    // Delete from database first
+    await FreeFoodListing.findByIdAndDelete(req.params.id);
+
+    // Then attempt to delete the image asynchronously
     if (listing.venueImage) {
-      await deleteUploadedImage(listing.venueImage, 'free-food');
+      deleteCloudinaryImage(listing.venueImage)
+        .catch(error => console.error('Cloudinary cleanup error:', error));
     }
 
-    await FreeFoodListing.findByIdAndDelete(req.params.id);
     res.json({ message: 'Listing deleted successfully' });
   } catch (error) {
     console.error('Delete error:', error);
-    res.status(500).json({ message: 'Error deleting listing' });
+    res.status(500).json({ message: 'Failed to delete listing' });
   }
 });
 

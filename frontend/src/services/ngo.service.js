@@ -12,51 +12,62 @@ const getAllNGOs = async () => {
 
 const registerNGO = async (ngoData) => {
   try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = user.token;
+
+    if (!token) {
+      window.location.href = '/login';
+      throw new Error('Please login to register your NGO');
+    }
+
     const formData = new FormData();
     
-    // Map form fields directly without renaming
-    const fieldsToMap = {
-      organizationName: ngoData.organizationName,
-      organizationEmail: ngoData.organizationEmail,
-      phoneNumber: ngoData.phoneNumber,
-      contactPersonName: ngoData.contactPersonName,
-      contactPersonEmail: ngoData.contactPersonEmail,
-      contactPersonPhone: ngoData.contactPersonPhone,
-      ngoType: ngoData.ngoType,
-      address: ngoData.address,
-      ngoWebsite: ngoData.ngoWebsite || '',
-      socialMediaLinks: ngoData.socialMediaLinks || ''
-    };
+    // Handle text fields
+    const textFields = [
+      'organizationName',
+      'organizationEmail',
+      'phoneNumber',
+      'contactPersonName',
+      'contactPersonEmail',
+      'contactPersonPhone',
+      'ngoType',
+      'address',
+      'ngoWebsite',
+      'socialMediaLinks'
+    ];
 
-    // Append all fields
-    Object.entries(fieldsToMap).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, value);
+    textFields.forEach(field => {
+      if (ngoData[field]) {
+        formData.append(field, ngoData[field]);
       }
     });
 
-    // Handle date separately
+    // Handle files specifically
+    if (ngoData.logo instanceof File) {
+      formData.append('logo', ngoData.logo, ngoData.logo.name);
+    }
+    if (ngoData.certification instanceof File) {
+      formData.append('certification', ngoData.certification, ngoData.certification.name);
+    }
+
+    // Handle date
     if (ngoData.incorporationDate) {
       formData.append('incorporationDate', ngoData.incorporationDate.toISOString());
     }
 
-    // Handle files
-    if (ngoData.logo instanceof File) {
-      formData.append('logo', ngoData.logo);
-    }
-    if (ngoData.certification instanceof File) {
-      formData.append('certification', ngoData.certification);
-    }
-
-    const response = await api.post('/ngos/register', formData, {
+    const response = await api.post('/ngos', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
       }
     });
     
     return response.data;
   } catch (error) {
-    console.error('Error in registerNGO:', error);
+    console.error('NGO Registration Error:', error.response?.data);
+    if (error.response?.status === 401) {
+      window.location.href = '/login';
+    }
     throw error.response?.data || { message: 'Failed to register NGO' };
   }
 };
