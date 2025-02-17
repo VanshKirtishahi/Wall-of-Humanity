@@ -3,7 +3,7 @@ import axios from 'axios';
 const isProduction = import.meta.env.PROD;
 const baseURL = isProduction 
   ? 'https://wall-of-humanity-xhoc.onrender.com/api'
-  : '/api'; // Use relative path for development
+  : 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL,
@@ -32,14 +32,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response,
   error => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error('API Error:', error);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-    }
-    if (error.message === 'Network Error') {
-      console.error('CORS or Network Error:', error);
     }
     return Promise.reject(error);
   }
