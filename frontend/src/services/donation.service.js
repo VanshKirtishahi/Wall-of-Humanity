@@ -116,13 +116,22 @@ class DonationService {
     try {
       const response = await api.post('/donations', formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': undefined
         }
       });
+      
+      if (!response.data) {
+        throw new Error('No response data received');
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      throw error;
+      if (error.response?.status === 401) {
+        localStorage.removeItem('user');
+        throw new Error('Authentication required');
+      }
+      throw new Error(error.response?.data?.message || 'Failed to create donation');
     }
   }
 
