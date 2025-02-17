@@ -84,17 +84,16 @@ router.get('/my-donations', auth, async (req, res) => {
 // Create donation
 router.post('/', auth, upload.single('images'), async (req, res) => {
   try {
-    // Log the file object to see what Cloudinary returns
-    console.log('Uploaded file:', req.file);
+    console.log('Received body:', req.body);
     
     const donationData = {
       ...req.body,
-      availability: JSON.parse(req.body.availability),
-      location: JSON.parse(req.body.location),
+      availability: req.body.availability ? JSON.parse(req.body.availability) : {},
+      location: req.body.location ? JSON.parse(req.body.location) : {},
       user: req.userId,
       userId: req.userId,
       donorName: req.user.name,
-      images: req.file ? [req.file.path] : [] // Cloudinary URL is in req.file.path
+      images: req.file ? [req.file.path] : []
     };
 
     const donation = new Donation(donationData);
