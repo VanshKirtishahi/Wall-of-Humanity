@@ -87,6 +87,11 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
     console.log('Request body:', req.body);
     console.log('File:', req.file);
 
+    // Validate required fields
+    if (!req.body.title || !req.body.description || !req.body.quantity) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
+
     const donationData = {
       ...req.body,
       user: req.userId,
@@ -97,10 +102,15 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
     // Parse JSON strings back to objects
     try {
       if (req.body.availability) {
-        donationData.availability = JSON.parse(req.body.availability);
+        donationData.availability = typeof req.body.availability === 'string' 
+          ? JSON.parse(req.body.availability)
+          : req.body.availability;
       }
+      
       if (req.body.location) {
-        donationData.location = JSON.parse(req.body.location);
+        donationData.location = typeof req.body.location === 'string'
+          ? JSON.parse(req.body.location)
+          : req.body.location;
       }
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
@@ -110,6 +120,11 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
     // Add image URL if image was uploaded
     if (req.file) {
       donationData.images = [req.file.path];
+    }
+
+    // Validate location fields based on schema
+    if (!donationData.location?.address || !donationData.location?.city || !donationData.location?.state) {
+      return res.status(400).json({ message: 'Location fields are required' });
     }
 
     const donation = new Donation(donationData);

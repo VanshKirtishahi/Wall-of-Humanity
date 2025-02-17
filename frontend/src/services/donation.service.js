@@ -117,31 +117,37 @@ class DonationService {
       // Create a new FormData instance
       const form = new FormData();
       
-      // Handle form data
-      for (const [key, value] of Object.entries(formData)) {
+      // Log incoming data for debugging
+      console.log('Incoming formData:', formData);
+      
+      // Handle form data similar to freeFoodService
+      Object.keys(formData).forEach(key => {
         if (key === 'images') {
-          if (value instanceof File) {
-            form.append('images', value);
+          if (formData[key] instanceof File) {
+            form.append('images', formData[key]);
           }
-        } else if (key === 'availability' || key === 'location') {
-          // Only append if value exists
-          if (value) {
-            const jsonValue = typeof value === 'object' ? JSON.stringify(value) : value;
-            form.append(key, jsonValue);
-          }
+        } else if (typeof formData[key] === 'object') {
+          // Stringify objects (location and availability)
+          form.append(key, JSON.stringify(formData[key]));
         } else {
-          // Only append if value is not null/undefined
-          if (value != null) {
-            form.append(key, value);
-          }
+          form.append(key, formData[key]);
         }
-      }
+      });
 
-      const response = await api.post('/donations', form);
+      const response = await api.post('/donations', form, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      throw error;
+      if (error.response?.status === 401) {
+        localStorage.removeItem('user');
+        throw new Error('Authentication required');
+      }
+      throw new Error(error.response?.data?.message || 'Failed to create donation');
     }
   }
 
