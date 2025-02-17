@@ -10,13 +10,16 @@ const app = express();
 
 // CORS Configuration
 const corsOptions = {
-  origin: 'http://localhost:5173' || 'https://wall-of-humanity.vercel.app',
+  origin: ['http://localhost:5173', 'https://wall-of-humanity.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
+
+// Add preflight handling
+app.options('*', cors(corsOptions));
 
 // Middleware
 app.use(express.json());

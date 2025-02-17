@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? process.env.VITE_API_URL
+    :  process.env.FRONTEND_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -39,6 +41,9 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+    if (error.message === 'Network Error') {
+      console.error('CORS or Network Error:', error);
     }
     return Promise.reject(error);
   }
