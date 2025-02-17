@@ -121,22 +121,26 @@ class DonationService {
       const form = new FormData();
       
       // Handle form data
-      for (let [key, value] of formData.entries()) {
-        if (key === 'availability' || key === 'location') {
-          try {
-            // Parse and re-stringify to validate JSON
-            JSON.parse(value);
-            form.append(key, value);
-          } catch (e) {
-            console.error(`Invalid JSON for ${key}:`, value);
-            throw new Error(`Invalid JSON data for ${key}`);
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'images') {
+          if (value instanceof File) {
+            form.append('images', value);
           }
+        } else if (key === 'availability' || key === 'location') {
+          // Ensure we're sending a valid JSON string
+          const jsonValue = typeof value === 'string' ? value : JSON.stringify(value);
+          form.append(key, jsonValue);
         } else {
           form.append(key, value);
         }
-      }
+      });
 
-      const response = await api.post('/donations', form);
+      const response = await api.post('/donations', form, {
+        headers: {
+          // Let browser set the content type for FormData
+          'Content-Type': undefined
+        }
+      });
       
       if (!response.data) {
         throw new Error('No response data received');

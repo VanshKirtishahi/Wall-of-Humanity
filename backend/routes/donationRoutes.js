@@ -86,10 +86,31 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
   try {
     console.log('Received body:', req.body);
     
+    // Safely parse JSON fields
+    let availability = {};
+    let location = {};
+    
+    try {
+      if (req.body.availability) {
+        availability = typeof req.body.availability === 'string' 
+          ? JSON.parse(req.body.availability)
+          : req.body.availability;
+      }
+      
+      if (req.body.location) {
+        location = typeof req.body.location === 'string'
+          ? JSON.parse(req.body.location)
+          : req.body.location;
+      }
+    } catch (e) {
+      console.error('JSON parsing error:', e);
+      return res.status(400).json({ message: 'Invalid JSON data in request' });
+    }
+
     const donationData = {
       ...req.body,
-      availability: req.body.availability ? JSON.parse(req.body.availability) : {},
-      location: req.body.location ? JSON.parse(req.body.location) : {},
+      availability,
+      location,
       user: req.userId,
       userId: req.userId,
       donorName: req.user.name,
