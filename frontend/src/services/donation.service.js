@@ -114,17 +114,17 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
-      // Create a new FormData instance
       const form = new FormData();
       
-      // Handle form data similar to freeFoodService
+      // Handle form data
       Object.keys(formData).forEach(key => {
         if (key === 'images') {
           if (formData.images instanceof File) {
             form.append('images', formData.images);
           }
-        } else if (typeof formData[key] === 'object') {
-          form.append(key, JSON.stringify(formData[key]));
+        } else if (key === 'availability' || key === 'location') {
+          // These fields need to be stringified properly
+          form.append(key, JSON.stringify(formData[key] || {}));
         } else {
           form.append(key, formData[key]);
         }
@@ -132,7 +132,6 @@ class DonationService {
 
       const response = await api.post('/donations', form, {
         headers: {
-          // Let the browser set the Content-Type with boundary
           'Content-Type': 'multipart/form-data'
         }
       });
