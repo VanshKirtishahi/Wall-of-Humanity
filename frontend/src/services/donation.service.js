@@ -123,18 +123,19 @@ class DonationService {
             form.append('images', formData.images);
           }
         } else if (key === 'availability' || key === 'location') {
-          // These fields need to be stringified properly
-          form.append(key, JSON.stringify(formData[key] || {}));
+          // Only stringify if the value exists
+          if (formData[key]) {
+            form.append(key, JSON.stringify(formData[key]));
+          }
         } else {
-          form.append(key, formData[key]);
+          // Only append if value is not undefined
+          if (formData[key] !== undefined) {
+            form.append(key, formData[key]);
+          }
         }
       });
 
-      const response = await api.post('/donations', form, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/donations', form);
       
       if (!response.data) {
         throw new Error('No response data received');
