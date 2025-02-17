@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const isProduction = import.meta.env.PROD;
+const baseURL = isProduction 
+  ? 'https://wall-of-humanity-xhoc.onrender.com'
+  : 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL,
   withCredentials: true
 });
 
@@ -13,7 +18,8 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+    // Don't override Content-Type for FormData
+    if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
       config.headers['Content-Type'] = 'application/json';
     }
     

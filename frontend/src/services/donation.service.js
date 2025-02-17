@@ -6,7 +6,8 @@ class DonationService {
       const response = await api.get('/donations');
       return response.data;
     } catch (error) {
-      throw new Error('Failed to fetch donations');
+      console.error('Fetch donations error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch donations');
     }
   }
 
