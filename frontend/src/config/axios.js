@@ -2,8 +2,8 @@ import axios from 'axios';
 
 const isProduction = import.meta.env.PROD;
 const baseURL = isProduction 
-  ? 'https://wall-of-humanity-xhoc.onrender.com/api'
-  : 'http://localhost:5000/api';
+  ? 'https://wall-of-humanity-xhoc.onrender.com'
+  : 'http://localhost:5000';
 
 const api = axios.create({
   baseURL,
@@ -16,6 +16,11 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Add /api prefix to all requests
+    if (!config.url?.startsWith('/api')) {
+      config.url = `/api${config.url}`;
     }
     
     // Don't override Content-Type for FormData

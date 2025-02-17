@@ -66,40 +66,22 @@ class DonationService {
 
   async updateDonation(id, formData) {
     try {
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        throw new Error('Authentication required');
-      }
-
-      const user = JSON.parse(userData);
-      if (!user.token) {
+      const response = await api.put(`/donations/${id}`, formData, {
+        headers: {
+          ...(!(formData instanceof FormData) && {
+            'Content-Type': 'application/json'
+          })
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Update donation error:', error);
+      if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/donations/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Accept': 'application/json'
-        },
-        body: formData,
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('user');
-          throw new Error('Authentication required');
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update donation');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Update donation error:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || 'Failed to update donation');
     }
   }
 
