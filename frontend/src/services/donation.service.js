@@ -114,26 +114,27 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
+      // Log the incoming formData for debugging
+      console.log('Incoming formData:', Object.fromEntries(formData));
+      
+      // Create a new FormData instance
       const form = new FormData();
       
       // Handle form data
-      Object.keys(formData).forEach(key => {
-        if (key === 'images') {
-          if (formData.images instanceof File) {
-            form.append('images', formData.images);
-          }
-        } else if (key === 'availability' || key === 'location') {
-          // Only stringify if the value exists
-          if (formData[key]) {
-            form.append(key, JSON.stringify(formData[key]));
+      for (let [key, value] of formData.entries()) {
+        if (key === 'availability' || key === 'location') {
+          try {
+            // Parse and re-stringify to validate JSON
+            JSON.parse(value);
+            form.append(key, value);
+          } catch (e) {
+            console.error(`Invalid JSON for ${key}:`, value);
+            throw new Error(`Invalid JSON data for ${key}`);
           }
         } else {
-          // Only append if value is not undefined
-          if (formData[key] !== undefined) {
-            form.append(key, formData[key]);
-          }
+          form.append(key, value);
         }
-      });
+      }
 
       const response = await api.post('/donations', form);
       
@@ -148,7 +149,7 @@ class DonationService {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-      throw new Error(error.response?.data?.message || 'Failed to create donation');
+      throw error;
     }
   }
 
