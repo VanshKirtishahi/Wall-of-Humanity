@@ -53,13 +53,10 @@ class DonationService {
 
   async createDonation(formData) {
     try {
-      const response = await api.post('/donations', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/donations', formData);
       return response.data;
     } catch (error) {
+      console.error('Create donation error:', error);
       if (error.response?.status === 401) {
         window.location.href = '/login';
       }

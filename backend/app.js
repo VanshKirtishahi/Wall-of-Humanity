@@ -18,11 +18,12 @@ const corsOptions = {
       'https://wall-of-humanity-xhoc.onrender.com'
     ];
     
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
   credentials: true,
@@ -33,13 +34,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Enable pre-flight requests for all routes
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', true);
-  next();
-});
 
 // Middleware
 app.use(express.json());
