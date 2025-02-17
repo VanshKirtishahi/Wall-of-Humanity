@@ -1,29 +1,19 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? process.env.VITE_API_URL
-    :  process.env.FRONTEND_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  withCredentials: true
 });
 
 // Add request interceptor for auth token
 api.interceptors.request.use(
   (config) => {
-    if (config.url?.startsWith('/api/')) {
-      config.url = config.url.substring(4);
-    }
-    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Don't override Content-Type if it's multipart/form-data
-    if (!config.headers['Content-Type']?.includes('multipart/form-data')) {
+    if (!config.headers['Content-Type'] && !config.headers['content-type']) {
       config.headers['Content-Type'] = 'application/json';
     }
     

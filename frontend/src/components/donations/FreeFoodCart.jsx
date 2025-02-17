@@ -38,13 +38,14 @@ const FreeFoodCart = () => {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/free-food');
+      const response = await api.get('/free-food');
+      console.log('API Response:', response);
       if (Array.isArray(response.data)) {
         setFreeFoodListings(response.data);
       }
     } catch (error) {
       console.error('Error fetching free food listings:', error);
-      setError('Failed to load free food listings');
+      setError(error.response?.data?.message || 'Failed to load listings');
     } finally {
       setIsLoading(false);
     }
