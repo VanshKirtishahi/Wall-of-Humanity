@@ -4,6 +4,7 @@ class DonationService {
   async getAllDonations() {
     try {
       const response = await api.get('/donations');
+      console.log('Donations response:', response);
       return response.data;
     } catch (error) {
       console.error('Fetch donations error:', error);
@@ -134,31 +135,12 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        throw new Error('Authentication required');
-      }
-
-      const user = JSON.parse(userData);
-      if (!user.token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/donations`, {
-        method: 'POST',
+      const response = await api.post('/donations', formData, {
         headers: {
-          'Authorization': `Bearer ${user.token}`
-        },
-        body: formData
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create donation');
-      }
-
-      const data = await response.json();
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
       throw error;
