@@ -198,16 +198,16 @@ const DonationForm = () => {
       const formDataToSend = new FormData();
 
       // Add basic fields
-      formDataToSend.append('type', formData.type);
+      formDataToSend.append('type', 'Food');
       formDataToSend.append('title', formData.title.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('quantity', formData.quantity.trim());
-      formDataToSend.append('foodType', formData.foodType.trim());
+      formDataToSend.append('foodType', formData.foodType);
 
       // Add availability as JSON string
       const availability = {
-        startTime: formData.availability.startTime,
-        endTime: formData.availability.endTime,
+        startTime: formData.availability.startTime || '',
+        endTime: formData.availability.endTime || '',
         notes: formData.availability.notes || ''
       };
       formDataToSend.append('availability', JSON.stringify(availability));
@@ -218,13 +218,18 @@ const DonationForm = () => {
         area: formData.location.area.trim(),
         city: formData.location.city.trim(),
         state: formData.location.state.trim(),
-        coordinates: formData.location.coordinates
+        coordinates: formData.location.coordinates || null
       };
       formDataToSend.append('location', JSON.stringify(location));
 
       // Add image if exists
       if (image) {
-        formDataToSend.append('image', image);
+        formDataToSend.append('images', image);
+      }
+
+      // Log form data for debugging
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`${key}:`, value instanceof File ? 'File' : value);
       }
 
       let response;
@@ -232,14 +237,14 @@ const DonationForm = () => {
         response = await donationService.updateDonation(id, formDataToSend);
         toast.success('Donation updated successfully');
       } else {
-        response = await donationService.createDonation(formDataToSend);
+        response = await donationService.createDonationWithImage(formDataToSend);
         toast.success('Donation created successfully');
       }
 
       navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save donation');
+      toast.error(error.message || 'Failed to save donation');
     } finally {
       setIsLoading(false);
     }
