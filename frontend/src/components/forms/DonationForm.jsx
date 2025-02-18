@@ -196,34 +196,33 @@ const DonationForm = () => {
 
     try {
       const formDataToSend = new FormData();
-      
-      // Format the data for submission
-      const submissionData = {
-        ...formData,
-        type: 'Food',
-        availability: {
-          startTime: formData.availability.startTime,
-          endTime: formData.availability.endTime,
-          notes: formData.availability.notes || ''
-        },
-        location: {
-          address: formData.location.address.trim(),
-          area: formData.location.area.trim(),
-          city: formData.location.city.trim(),
-          state: formData.location.state.trim(),
-          coordinates: formData.location.coordinates
-        }
+
+      // Add basic fields
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('title', formData.title.trim());
+      formDataToSend.append('description', formData.description.trim());
+      formDataToSend.append('quantity', formData.quantity.trim());
+      formDataToSend.append('foodType', formData.foodType.trim());
+
+      // Add availability as JSON string
+      const availability = {
+        startTime: formData.availability.startTime,
+        endTime: formData.availability.endTime,
+        notes: formData.availability.notes || ''
       };
+      formDataToSend.append('availability', JSON.stringify(availability));
 
-      // Add all form fields to FormData
-      Object.keys(submissionData).forEach(key => {
-        if (key === 'location' || key === 'availability') {
-          formDataToSend.append(key, JSON.stringify(submissionData[key]));
-        } else if (key !== 'images') {
-          formDataToSend.append(key, submissionData[key]);
-        }
-      });
+      // Add location as JSON string
+      const location = {
+        address: formData.location.address.trim(),
+        area: formData.location.area.trim(),
+        city: formData.location.city.trim(),
+        state: formData.location.state.trim(),
+        coordinates: formData.location.coordinates
+      };
+      formDataToSend.append('location', JSON.stringify(location));
 
+      // Add image if exists
       if (image) {
         formDataToSend.append('image', image);
       }
@@ -240,8 +239,7 @@ const DonationForm = () => {
       navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to save donation';
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || 'Failed to save donation');
     } finally {
       setIsLoading(false);
     }
