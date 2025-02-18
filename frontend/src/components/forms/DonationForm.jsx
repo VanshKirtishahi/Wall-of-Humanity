@@ -362,22 +362,28 @@ const DonationForm = () => {
                   <span className="bg-purple-100 p-2 rounded-lg mr-2">🕒</span>
                   Pickup Time Availability
                 </h3>
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <div className="group flex-1">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                        Pickup Time
+                        Time
                       </label>
-                      <input
-                        type="time"
+                      <select
                         name="availability.time"
                         value={formData.availability.time}
-                        onChange={handleTimeChange}
+                        onChange={handleChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                           hover:border-purple-400 transition-colors"
                         required
-                      />
+                      >
+                        <option value="">Select Time</option>
+                        {timeOptions.map((time) => (
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="group w-32">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
@@ -386,7 +392,7 @@ const DonationForm = () => {
                       <select
                         name="availability.period"
                         value={formData.availability.period}
-                        onChange={handlePeriodChange}
+                        onChange={handleChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                           hover:border-purple-400 transition-colors"
@@ -398,13 +404,17 @@ const DonationForm = () => {
                   </div>
 
                   <div>
-                    <label className="block text-gray-700 mb-2">Additional Pickup Instructions</label>
+                    <label className="block text-sm font-medium text-purple-700 mb-1.5">
+                      Additional Pickup Instructions
+                    </label>
                     <textarea
                       name="availability.notes"
                       value={formData.availability.notes}
                       onChange={handleChange}
-                      placeholder="E.g., Please call 10 minutes before pickup, Ring doorbell upon arrival, etc."
-                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="E.g., Please call before pickup, Ring doorbell, etc."
+                      className="block w-full rounded-lg border-purple-300 shadow-sm 
+                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                        hover:border-purple-400 transition-colors"
                       rows="2"
                     />
                   </div>
