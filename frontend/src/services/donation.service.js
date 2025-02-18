@@ -4,8 +4,16 @@ class DonationService {
   async getAllDonations() {
     try {
       const response = await api.get('/donations');
-      console.log('Donations response:', response);
-      return response.data;
+      // Filter out FreeFood listings from other users
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const filteredDonations = response.data.filter(donation => {
+        // Show all regular donations
+        if (!donation.isFreeFoodListing) return true;
+        // Only show FreeFood listings if they belong to the current user
+        return donation.userId === user.id;
+      });
+      
+      return filteredDonations;
     } catch (error) {
       console.error('Fetch donations error:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch donations');
