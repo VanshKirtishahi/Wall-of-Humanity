@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { DEFAULT_DONATION_IMAGE } from '../../constants/images';
 import { useAuth } from '../../context/AuthContext';
 import donationService from '../../services/donation.service';
-import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
-import { DEFAULT_DONATION_IMAGE, DEFAULT_VENUE_IMAGE } from '../../constants/images';
 
 const DonationForm = () => {
   const { user } = useAuth();
@@ -198,59 +197,58 @@ const DonationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
     setIsLoading(true);
-
+  
     try {
-      if (!formData.title || !formData.description || !formData.quantity) {
-        toast.error('Please fill in all required fields');
-        setIsLoading(false);
-        return;
+      const formDataToSend = new FormData();
+      
+      // Add all form fields to FormData
+      Object.keys(formData).forEach(key => {
+        if (key === 'location' || key === 'availability') {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (key !== 'images') { // Skip images array
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+  
+      if (image) {
+        formDataToSend.append('image', image);
       }
-
-      if (!formData.location?.address || !formData.location?.city || !formData.location?.state) {
-        toast.error('Please fill in all location fields');
-        setIsLoading(false);
-        return;
+  
+      let response;
+      if (id) {
+        response = await donationService.updateDonation(id, formDataToSend);
+        toast.success('Donation updated successfully');
+      } else {
+        response = await donationService.createDonation(formDataToSend);
+        toast.success('Donation created successfully');
       }
-
-      const form = new FormData();
-
-      // Add basic fields
-      form.append('type', formData.type);
-      form.append('title', formData.title);
-      form.append('description', formData.description);
-      form.append('quantity', formData.quantity);
-      form.append('foodType', formData.foodType);
-
-      // Format and add availability
-      const availability = {
-        startTime: formData.availability.startTime 
-          ? `${formData.availability.startTime} ${formData.availability.startPeriod}`
-          : '',
-        endTime: formData.availability.endTime 
-          ? `${formData.availability.endTime} ${formData.availability.endPeriod}`
-          : '',
-        notes: formData.availability.notes || ''
-      };
-      form.append('availability', JSON.stringify(availability));
-
-      // Add location
-      form.append('location', JSON.stringify(formData.location));
-
-      // Add image if exists
-      if (image instanceof File) {
-        form.append('images', image);
-      }
-
-      const response = await donationService.createDonationWithImage(form);
-      toast.success('Donation created successfully!');
+  
       navigate('/my-donations');
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error(error.message || 'Failed to submit donation');
+      console.error('Submission error:', error);
+      toast.error(error.response?.data?.message || 'Failed to save donation');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const validateForm = () => {
+    const errors = [];
+    
+    if (!formData.title.trim()) errors.push('Title is required');
+    if (!formData.description.trim()) errors.push('Description is required');
+    if (!formData.quantity.trim()) errors.push('Quantity is required');
+    if (!formData.location.address.trim()) errors.push('Address is required');
+    if (!formData.location.city.trim()) errors.push('City is required');
+    if (!formData.location.state.trim()) errors.push('State is required');
+    
+    if (errors.length > 0) {
+      toast.error(errors.join('\n'));
+      return false;
+    }
+    return true;
   };
 
   return (

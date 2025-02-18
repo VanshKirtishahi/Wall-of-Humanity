@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import donationService from '../../services/donation.service';
-import DonationCard from './DonationCard';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../../config/axios';
+import { useAuth } from '../../context/AuthContext';
+import donationService from '../../services/donation.service';
+import DonationCard from './DonationCard';
 
 const MyDonations = () => {
   const { user } = useAuth();
@@ -69,32 +69,24 @@ const MyDonations = () => {
     }
   }, [location.state]);
 
-  const handleEdit = (id) => {
-    navigate(`/donation-form/${id}`);
+  const handleEdit = async (donationId) => {
+    try {
+      navigate(`/donation-form/${donationId}`);
+    } catch (error) {
+      console.error('Edit error:', error);
+      toast.error('Failed to edit donation');
+    }
   };
 
   const handleDelete = async (donationId) => {
     if (window.confirm('Are you sure you want to delete this donation?')) {
       try {
         await donationService.deleteDonation(donationId);
-        setDonations(donations.filter(d => d._id !== donationId));
-        toast.success('Donation deleted successfully', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        setDonations(prev => prev.filter(donation => donation._id !== donationId));
+        toast.success('Donation deleted successfully');
       } catch (error) {
-        toast.error('Failed to delete donation', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        console.error('Delete error:', error);
+        toast.error('Failed to delete donation');
       }
     }
   };

@@ -154,42 +154,50 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update donation
-router.put('/:id', auth, donationUpload.single('images'), async (req, res) => {
+router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
   try {
-    const donation = await Donation.findById(req.params.id);
+    const donationId = req.params.id;
+    const donation = await Donation.findById(donationId);
+
     if (!donation) {
       return res.status(404).json({ message: 'Donation not found' });
     }
 
-    if (donation.user.toString() !== req.userId) {
-      return res.status(401).json({ message: 'Not authorized' });
+    if (donation.userId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized to update this donation' });
     }
 
-    const updateData = {
-      ...req.body,
-      availability: JSON.parse(req.body.availability),
-      location: JSON.parse(req.body.location),
-      user: req.userId
-    };
+    let updateData = {};
+    try {
+      updateData = {
+        ...req.body,
+        location: typeof req.body.location === 'string' ? JSON.parse(req.body.location) : req.body.location,
+        availability: typeof req.body.availability === 'string' ? JSON.parse(req.body.availability) : req.body.availability
+      };
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid data format' });
+    }
 
-    // If new image is uploaded, delete the old one
     if (req.file) {
       if (donation.images && donation.images.length > 0) {
-        await Promise.all(donation.images.map(imageUrl => deleteCloudinaryImage(imageUrl)));
+        await deleteCloudinaryImage(donation.images[0]);
       }
       updateData.images = [req.file.path];
     }
 
     const updatedDonation = await Donation.findByIdAndUpdate(
-      req.params.id,
+      donationId,
       updateData,
       { new: true, runValidators: true }
-    ).populate('user', 'name email');
+    );
 
     res.json(updatedDonation);
   } catch (error) {
     console.error('Update error:', error);
-    res.status(400).json({ message: error.message });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Error updating donation' });
   }
 });
 

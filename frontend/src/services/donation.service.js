@@ -66,22 +66,23 @@ class DonationService {
 
   async updateDonation(id, formData) {
     try {
-      const response = await api.put(`/donations/${id}`, formData, {
+      const token = JSON.parse(localStorage.getItem('user'))?.token;
+      if (!token) throw new Error('Authentication required');
+
+      const response = await api.put(`/api/donations/${id}`, formData, {
         headers: {
-          ...(!(formData instanceof FormData) && {
-            'Content-Type': 'application/json'
-          })
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         }
       });
       
       return response.data;
     } catch (error) {
-      console.error('Update donation error:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-      throw new Error(error.response?.data?.message || 'Failed to update donation');
+      throw error;
     }
   }
 
