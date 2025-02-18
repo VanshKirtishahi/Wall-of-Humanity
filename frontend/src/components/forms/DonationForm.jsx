@@ -21,8 +21,8 @@ const DonationForm = () => {
     foodType: '',
     images: [],
     availability: {
-      time: '',
-      period: 'AM',
+      startTime: '',
+      endTime: '',
       notes: ''
     },
     location: {
@@ -68,8 +68,8 @@ const DonationForm = () => {
             foodType: donation.foodType || '',
             images: donation.images || [],
             availability: {
-              time: donation.availability?.time || '',
-              period: donation.availability?.period || 'AM',
+              startTime: donation.availability?.startTime || '',
+              endTime: donation.availability?.endTime || '',
               notes: donation.availability?.notes || ''
             },
             location: {
@@ -232,8 +232,8 @@ const DonationForm = () => {
         foodType: '',
         images: [],
         availability: {
-          time: '',
-          period: 'AM',
+          startTime: '',
+          endTime: '',
           notes: ''
         },
         location: {
@@ -363,43 +363,36 @@ const DonationForm = () => {
                   Pickup Time Availability
                 </h3>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="group flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="group">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                        Time
+                        Start Time
                       </label>
-                      <select
-                        name="availability.time"
-                        value={formData.availability.time}
+                      <input
+                        type="time"
+                        name="availability.startTime"
+                        value={formData.availability.startTime}
                         onChange={handleChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                           hover:border-purple-400 transition-colors"
                         required
-                      >
-                        <option value="">Select Time</option>
-                        {timeOptions.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
-                    <div className="group w-32">
+                    <div className="group">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                        Period
+                        End Time
                       </label>
-                      <select
-                        name="availability.period"
-                        value={formData.availability.period}
+                      <input
+                        type="time"
+                        name="availability.endTime"
+                        value={formData.availability.endTime}
                         onChange={handleChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                           hover:border-purple-400 transition-colors"
-                      >
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
+                        required
+                      />
                     </div>
                   </div>
 
