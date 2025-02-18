@@ -193,23 +193,41 @@ const DonationForm = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
-  
+
     try {
       const formDataToSend = new FormData();
       
+      // Format the data for submission
+      const submissionData = {
+        ...formData,
+        type: 'Food',
+        availability: {
+          startTime: formData.availability.startTime,
+          endTime: formData.availability.endTime,
+          notes: formData.availability.notes || ''
+        },
+        location: {
+          address: formData.location.address.trim(),
+          area: formData.location.area.trim(),
+          city: formData.location.city.trim(),
+          state: formData.location.state.trim(),
+          coordinates: formData.location.coordinates
+        }
+      };
+
       // Add all form fields to FormData
-      Object.keys(formData).forEach(key => {
+      Object.keys(submissionData).forEach(key => {
         if (key === 'location' || key === 'availability') {
-          formDataToSend.append(key, JSON.stringify(formData[key]));
+          formDataToSend.append(key, JSON.stringify(submissionData[key]));
         } else if (key !== 'images') {
-          formDataToSend.append(key, formData[key]);
+          formDataToSend.append(key, submissionData[key]);
         }
       });
-  
+
       if (image) {
         formDataToSend.append('image', image);
       }
-  
+
       let response;
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
@@ -218,35 +236,12 @@ const DonationForm = () => {
         response = await donationService.createDonation(formDataToSend);
         toast.success('Donation created successfully');
       }
-  
+
       navigate('/my-donations', { replace: true });
-      
-      // Clear form state
-      setImage(null);
-      setImagePreview(null);
-      setFormData({
-        type: 'Food',
-        title: '',
-        description: '',
-        quantity: '',
-        foodType: '',
-        images: [],
-        availability: {
-          startTime: '',
-          endTime: '',
-          notes: ''
-        },
-        location: {
-          address: '',
-          area: '',
-          city: '',
-          state: '',
-          coordinates: null
-        }
-      });
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error(error.response?.data?.message || 'Failed to save donation');
+      const errorMessage = error.response?.data?.message || 'Failed to save donation';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -255,13 +250,32 @@ const DonationForm = () => {
   const validateForm = () => {
     const errors = [];
     
-    if (!formData.title.trim()) errors.push('Title is required');
-    if (!formData.description.trim()) errors.push('Description is required');
-    if (!formData.quantity.trim()) errors.push('Quantity is required');
-    if (!formData.location.address.trim()) errors.push('Address is required');
-    if (!formData.location.city.trim()) errors.push('City is required');
-    if (!formData.location.state.trim()) errors.push('State is required');
-    
+    // Basic field validation
+    if (!formData.title?.trim()) errors.push('Title is required');
+    if (!formData.description?.trim()) errors.push('Description is required');
+    if (!formData.quantity?.trim()) errors.push('Quantity is required');
+    if (!formData.foodType?.trim()) errors.push('Food type is required');
+
+    // Location validation
+    if (!formData.location?.address?.trim()) errors.push('Address is required');
+    if (!formData.location?.city?.trim()) errors.push('City is required');
+    if (!formData.location?.state?.trim()) errors.push('State is required');
+
+    // Time validation
+    if (formData.type === 'Food') {
+      if (!formData.availability?.startTime) {
+        errors.push('Start time is required');
+      }
+      if (!formData.availability?.endTime) {
+        errors.push('End time is required');
+      }
+      if (formData.availability?.startTime && formData.availability?.endTime) {
+        if (formData.availability.startTime >= formData.availability.endTime) {
+          errors.push('End time must be after start time');
+        }
+      }
+    }
+
     if (errors.length > 0) {
       toast.error(errors.join('\n'));
       return false;
