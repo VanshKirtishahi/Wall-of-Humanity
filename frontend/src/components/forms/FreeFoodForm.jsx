@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../../config/axios';
+import { useAuth } from '../../context/AuthContext';
 import freeFoodService from '../../services/freeFood.service';
 
 const FreeFoodForm = () => {
@@ -22,9 +22,7 @@ const FreeFoodForm = () => {
     availability: {
       type: 'specific',
       startTime: '',
-      startPeriod: 'AM',
       endTime: '',
-      endPeriod: 'PM',
       specificDate: new Date().toISOString().split('T')[0],
       notes: ''
     },
@@ -80,9 +78,7 @@ const FreeFoodForm = () => {
         availability: {
           type: listing.availability?.type || 'specific',
           startTime: listing.availability?.startTime || '',
-          startPeriod: listing.availability?.startPeriod || 'AM',
           endTime: listing.availability?.endTime || '',
-          endPeriod: listing.availability?.endPeriod || 'PM',
           specificDate: formattedDate,
           notes: listing.availability?.notes || ''
         },
@@ -177,7 +173,6 @@ const FreeFoodForm = () => {
     const { name, value } = e.target;
     const timeField = name.split('.')[1];
     
-    // Convert time to 24-hour format
     setFormData(prev => ({
       ...prev,
       availability: {
@@ -185,34 +180,6 @@ const FreeFoodForm = () => {
         [timeField]: value
       }
     }));
-  };
-
-  const handlePeriodChange = (e) => {
-    const { name, value } = e.target;
-    const periodField = name.split('.')[1];
-    
-    setFormData(prev => ({
-      ...prev,
-      availability: {
-        ...prev.availability,
-        [periodField]: value
-      }
-    }));
-  };
-
-  const formatTimeForDisplay = (time, period) => {
-    if (!time) return '';
-    
-    const [hours, minutes] = time.split(':');
-    let hour = parseInt(hours);
-    
-    if (period === 'PM' && hour < 12) {
-      hour += 12;
-    } else if (period === 'AM' && hour === 12) {
-      hour = 0;
-    }
-    
-    return `${hour.toString().padStart(2, '0')}:${minutes}`;
   };
 
   const handleSubmit = async (e) => {
@@ -422,72 +389,36 @@ const FreeFoodForm = () => {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="group flex-1">
-                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      name="availability.startTime"
-                      value={formData.availability.startTime}
-                      onChange={handleTimeChange}
-                      className="block w-full rounded-lg border-purple-300 shadow-sm 
-                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                        hover:border-purple-400 transition-colors"
-                      required
-                    />
-                  </div>
-                  <div className="group">
-                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                      Period
-                    </label>
-                    <select
-                      name="availability.startPeriod"
-                      value={formData.availability.startPeriod}
-                      onChange={handlePeriodChange}
-                      className="block w-full rounded-lg border-purple-300 shadow-sm 
-                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                        hover:border-purple-400 transition-colors"
-                    >
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                  </div>
+                <div className="group">
+                  <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    name="availability.startTime"
+                    value={formData.availability.startTime}
+                    onChange={handleTimeChange}
+                    className="block w-full rounded-lg border-purple-300 shadow-sm 
+                      focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                      hover:border-purple-400 transition-colors"
+                    required
+                  />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="group flex-1">
-                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      name="availability.endTime"
-                      value={formData.availability.endTime}
-                      onChange={handleTimeChange}
-                      className="block w-full rounded-lg border-purple-300 shadow-sm 
-                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                        hover:border-purple-400 transition-colors"
-                      required
-                    />
-                  </div>
-                  <div className="group">
-                    <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                      Period
-                    </label>
-                    <select
-                      name="availability.endPeriod"
-                      value={formData.availability.endPeriod}
-                      onChange={handlePeriodChange}
-                      className="block w-full rounded-lg border-purple-300 shadow-sm 
-                        focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                        hover:border-purple-400 transition-colors"
-                    >
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                  </div>
+                <div className="group">
+                  <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    name="availability.endTime"
+                    value={formData.availability.endTime}
+                    onChange={handleTimeChange}
+                    className="block w-full rounded-lg border-purple-300 shadow-sm 
+                      focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                      hover:border-purple-400 transition-colors"
+                    required
+                  />
                 </div>
               </div>
 
