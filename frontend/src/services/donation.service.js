@@ -128,26 +128,20 @@ class DonationService {
         throw new Error('Authentication required');
       }
 
-      // Validate required fields before sending
-      const requiredFields = ['title', 'description', 'quantity', 'foodType', 'location'];
-      for (let field of requiredFields) {
-        const value = formData.get(field);
-        if (!value || (typeof value === 'string' && !value.trim())) {
-          throw new Error(`${field} is required`);
-        }
-      }
-
       // Log form data for debugging
       for (let [key, value] of formData.entries()) {
         console.log(`Sending ${key}:`, value instanceof File ? 'File' : value);
       }
 
+      // Ensure we're using the correct field name for images
+      const hasImageField = Array.from(formData.keys()).includes('images');
+      if (!hasImageField) {
+        throw new Error('Image field missing');
+      }
+
       const response = await api.post('/donations', formData, {
         headers: {
           'Authorization': `Bearer ${token}`
-        },
-        validateStatus: function (status) {
-          return status >= 200 && status < 300;
         }
       });
 
@@ -158,9 +152,6 @@ class DonationService {
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      if (error.response?.status === 400) {
-        throw new Error(error.response.data.message || 'Validation error - please check all required fields');
-      }
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
