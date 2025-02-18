@@ -92,7 +92,6 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
-    // Parse JSON fields
     let availability = {};
     let location = {};
 
@@ -113,6 +112,7 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Invalid JSON format in request' });
     }
 
+    // Create donation data
     const donationData = {
       type: req.body.type || 'Food',
       title: req.body.title.trim(),
@@ -123,9 +123,13 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       location,
       user: req.userId,
       userId: req.userId,
-      donorName: req.user.name,
-      images: req.file ? [req.file.path] : []
+      donorName: req.user.name
     };
+
+    // Add image if uploaded successfully
+    if (req.file && req.file.path) {
+      donationData.images = [req.file.path];
+    }
 
     const donation = new Donation(donationData);
     const savedDonation = await donation.save();

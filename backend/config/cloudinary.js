@@ -27,9 +27,9 @@ const avatarStorage = new CloudinaryStorage({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'wall-of-humanity/free-food',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 800, height: 600, crop: 'fill' }]
+    folder: 'donations',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   }
 });
 
@@ -38,10 +38,7 @@ const avatarUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
+const upload = multer({ storage: storage });
 
 module.exports = { 
   cloudinary, 
