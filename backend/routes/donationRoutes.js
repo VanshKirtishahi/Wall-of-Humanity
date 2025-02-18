@@ -82,10 +82,10 @@ router.get('/my-donations', auth, async (req, res) => {
 });
 
 // Create donation
-router.post('/', auth, donationUpload.single('images'), async (req, res) => {
+router.post('/', auth, donationUpload.array('images', 5), async (req, res) => {
   try {
     console.log('Request body:', req.body);
-    console.log('File:', req.file);
+    console.log('Files:', req.files);
 
     // Validate required fields
     if (!req.body.title || !req.body.description || !req.body.quantity) {
@@ -118,24 +118,15 @@ router.post('/', auth, donationUpload.single('images'), async (req, res) => {
       location,
       user: req.userId,
       userId: req.userId,
-      donorName: req.user.name
+      donorName: req.user.name,
+      images: req.files ? req.files.map(file => file.path) : []
     };
 
-    // Handle image upload
-    try {
-      if (req.file) {
-        donationData.images = [req.file.path];
-      }
-
-      const donation = new Donation(donationData);
-      const savedDonation = await donation.save();
-      
-      console.log('Created donation:', savedDonation);
-      res.status(201).json(savedDonation);
-    } catch (uploadError) {
-      console.error('Image upload error:', uploadError);
-      return res.status(400).json({ message: 'Failed to upload image' });
-    }
+    const donation = new Donation(donationData);
+    const savedDonation = await donation.save();
+    
+    console.log('Created donation:', savedDonation);
+    res.status(201).json(savedDonation);
   } catch (error) {
     console.error('Error creating donation:', error);
     if (error.name === 'ValidationError') {
@@ -271,24 +262,6 @@ router.get('/debug-stats', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/create', auth, donationUpload.array('images', 5), async (req, res) => {
-  try {
-    const imageUrls = req.files.map(file => file.path); // Cloudinary provides the URL in file.path
-    
-    const donation = new Donation({
-      ...req.body,
-      userId: req.userId,
-      images: imageUrls
-    });
-    
-    await donation.save();
-    res.status(201).json(donation);
-  } catch (error) {
-    console.error('Error creating donation:', error);
-    res.status(400).json({ message: error.message });
   }
 });
 
