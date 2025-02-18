@@ -204,32 +204,44 @@ const DonationForm = () => {
       // Validate required fields
       if (!formData.title || !formData.description || !formData.quantity) {
         toast.error('Please fill in all required fields');
+        setIsLoading(false);
         return;
       }
 
       // Validate location
       if (!formData.location.address || !formData.location.city || !formData.location.state) {
         toast.error('Please fill in all location fields');
+        setIsLoading(false);
         return;
       }
 
-      // Create form data
-      const formDataToSend = {
-        ...formData,
-        availability: {
-          ...formData.availability,
-          startTime: formData.availability.startTime 
-            ? `${formData.availability.startTime} ${formData.availability.startPeriod}`
-            : '',
-          endTime: formData.availability.endTime 
-            ? `${formData.availability.endTime} ${formData.availability.endPeriod}`
-            : ''
-        }
-      };
+      const formDataToSend = new FormData();
 
-      // Handle image separately
+      // Add basic fields
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('quantity', formData.quantity);
+      formDataToSend.append('foodType', formData.foodType);
+
+      // Add availability
+      const availability = {
+        ...formData.availability,
+        startTime: formData.availability.startTime 
+          ? `${formData.availability.startTime} ${formData.availability.startPeriod}`
+          : '',
+        endTime: formData.availability.endTime 
+          ? `${formData.availability.endTime} ${formData.availability.endPeriod}`
+          : ''
+      };
+      formDataToSend.append('availability', JSON.stringify(availability));
+
+      // Add location
+      formDataToSend.append('location', JSON.stringify(formData.location));
+
+      // Add image if exists
       if (image) {
-        formDataToSend.images = image;
+        formDataToSend.append('images', image);
       }
 
       let response;

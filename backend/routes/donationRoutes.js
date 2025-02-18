@@ -92,59 +92,46 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
-    // Initialize donation data
+    let availability = {};
+    let location = {};
+
+    try {
+      if (req.body.availability) {
+        availability = JSON.parse(req.body.availability);
+      }
+      if (req.body.location) {
+        location = JSON.parse(req.body.location);
+      }
+    } catch (e) {
+      console.error('JSON parsing error:', e);
+      return res.status(400).json({ message: 'Invalid JSON format in request' });
+    }
+
     const donationData = {
       type: req.body.type || 'Food',
       title: req.body.title,
       description: req.body.description,
       quantity: req.body.quantity,
       foodType: req.body.foodType,
+      availability,
+      location,
       user: req.userId,
       userId: req.userId,
-      donorName: req.user.name
+      donorName: req.user.name,
+      images: req.file ? [req.file.path] : []
     };
 
-    // Handle availability
-    try {
-      if (req.body.availability) {
-        donationData.availability = JSON.parse(req.body.availability);
-      }
-    } catch (e) {
-      console.error('Availability parsing error:', e);
-      return res.status(400).json({ message: 'Invalid availability format' });
-    }
-
-    // Handle location
-    try {
-      if (req.body.location) {
-        donationData.location = JSON.parse(req.body.location);
-        if (!donationData.location.address || !donationData.location.city || !donationData.location.state) {
-          return res.status(400).json({ message: 'Location fields are required' });
-        }
-      } else {
-        return res.status(400).json({ message: 'Location is required' });
-      }
-    } catch (e) {
-      console.error('Location parsing error:', e);
-      return res.status(400).json({ message: 'Invalid location format' });
-    }
-
-    // Handle image
-    if (req.file) {
-      donationData.images = [req.file.path];
-    }
-
     const donation = new Donation(donationData);
-    await donation.save();
+    const savedDonation = await donation.save();
     
-    console.log('Created donation:', donation);
-    res.status(201).json(donation);
+    console.log('Created donation:', savedDonation);
+    res.status(201).json(savedDonation);
   } catch (error) {
     console.error('Error creating donation:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 

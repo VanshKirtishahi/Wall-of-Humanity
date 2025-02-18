@@ -114,34 +114,15 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
-      const form = new FormData();
-      
-      // Handle basic fields
-      const basicFields = ['type', 'title', 'description', 'quantity', 'foodType'];
-      basicFields.forEach(field => {
-        if (formData[field]) {
-          form.append(field, formData[field]);
-        }
-      });
-
-      // Handle image
-      if (formData.images instanceof File) {
-        form.append('images', formData.images);
-      }
-
-      // Handle objects that need to be stringified
-      if (formData.availability) {
-        form.append('availability', JSON.stringify(formData.availability));
-      }
-      if (formData.location) {
-        form.append('location', JSON.stringify(formData.location));
-      }
-
-      const response = await api.post('/donations', form, {
+      const response = await api.post('/donations', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
+      
+      if (!response.data) {
+        throw new Error('No response data received');
+      }
       
       return response.data;
     } catch (error) {
