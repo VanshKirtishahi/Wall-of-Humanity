@@ -159,39 +159,27 @@ const DonationForm = () => {
     
     if (!value) return;
 
-    // Parse the 24-hour time format from input
+    // Parse the time value from the input
     const [hours, minutes] = value.split(':');
     const hour = parseInt(hours);
     
-    // Determine period (AM/PM)
-    let period = hour >= 12 ? 'PM' : 'AM';
-    let displayHour = hour % 12;
-    displayHour = displayHour === 0 ? 12 : displayHour;
+    // Convert to 12-hour format
+    let period = 'AM';
+    let displayHour = hour;
     
-    // Format time in 12-hour format
-    const timeIn12Hour = `${displayHour.toString().padStart(2, '0')}:${minutes}`;
+    if (hour >= 12) {
+      period = 'PM';
+      displayHour = hour === 12 ? 12 : hour - 12;
+    } else if (hour === 0) {
+      displayHour = 12;
+    }
     
     setFormData(prev => ({
       ...prev,
       availability: {
         ...prev.availability,
-        [timeField]: timeIn12Hour,
+        [timeField]: `${displayHour}:${minutes}`,
         [`${timeField}Period`]: period
-      }
-    }));
-  };
-
-  const handlePeriodChange = (e) => {
-    const { name, value } = e.target;
-    const periodField = name.split('.')[1];
-    const timeField = periodField.replace('Period', 'Time');
-    
-    setFormData(prev => ({
-      ...prev,
-      availability: {
-        ...prev.availability,
-        [periodField]: value,
-        [timeField]: prev.availability[timeField] // Preserve the time when changing period
       }
     }));
   };
@@ -202,7 +190,7 @@ const DonationForm = () => {
     const [hours, minutes] = time.split(':');
     let hour = parseInt(hours);
     
-    // Convert to 24-hour format for HTML time input
+    // Convert to 24-hour format for the time input
     if (period === 'PM' && hour !== 12) {
       hour += 12;
     } else if (period === 'AM' && hour === 12) {
@@ -210,6 +198,36 @@ const DonationForm = () => {
     }
     
     return `${hour.toString().padStart(2, '0')}:${minutes}`;
+  };
+
+  const handlePeriodChange = (e) => {
+    const { name, value } = e.target;
+    const periodField = name.split('.')[1];
+    const timeField = periodField.replace('Period', 'Time');
+    
+    // Get current time
+    const currentTime = formData.availability[timeField];
+    if (!currentTime) return;
+    
+    // Convert time based on new period
+    const [hours, minutes] = currentTime.split(':');
+    let hour = parseInt(hours);
+    
+    // Adjust hour based on period change
+    if (value === 'PM' && hour < 12) {
+      hour += 12;
+    } else if (value === 'AM' && hour >= 12) {
+      hour = hour === 12 ? 0 : hour - 12;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [periodField]: value,
+        [timeField]: `${hour}:${minutes}`
+      }
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -220,19 +238,14 @@ const DonationForm = () => {
     try {
       const formDataToSend = new FormData();
       
-      // Format times before sending
+      // Format times for submission
       const formattedData = {
         ...formData,
         availability: {
           ...formData.availability,
-          startTime: formatTimeForDisplay(
-            formData.availability.startTime,
-            formData.availability.startPeriod
-          ),
-          endTime: formatTimeForDisplay(
-            formData.availability.endTime,
-            formData.availability.endPeriod
-          )
+          startTime: `${formData.availability.startTime} ${formData.availability.startPeriod}`,
+          endTime: `${formData.availability.endTime} ${formData.availability.endPeriod}`,
+          notes: formData.availability.notes || ''
         }
       };
   
@@ -253,13 +266,14 @@ const DonationForm = () => {
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
         toast.success('Donation updated successfully');
-        navigate('/my-donations', { replace: true });
       } else {
         response = await donationService.createDonation(formDataToSend);
         toast.success('Donation created successfully');
-        navigate('/my-donations', { replace: true });
       }
   
+      // Navigate first, then clear form
+      navigate('/my-donations', { replace: true });
+      
       // Clear form state
       setImage(null);
       setImagePreview(null);
