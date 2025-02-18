@@ -136,8 +136,15 @@ class DonationService {
       const response = await api.post('/donations', formData, {
         headers: {
           'Authorization': `Bearer ${token}`
+        },
+        validateStatus: function (status) {
+          return status >= 200 && status < 500;
         }
       });
+
+      if (response.status === 400) {
+        throw new Error(response.data.message || 'Validation error');
+      }
 
       if (!response.data) {
         throw new Error('No response data received');
