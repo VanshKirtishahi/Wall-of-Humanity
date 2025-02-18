@@ -155,33 +155,33 @@ router.get('/:id', auth, async (req, res) => {
 
 // Update donation
 router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
+  let session;
   try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+
     const donationId = req.params.id;
-    const donation = await Donation.findById(donationId);
+    const donation = await Donation.findById(donationId).session(session);
 
     if (!donation) {
+      await session.abortTransaction();
       return res.status(404).json({ message: 'Donation not found' });
     }
 
     if (donation.userId.toString() !== req.userId) {
+      await session.abortTransaction();
       return res.status(403).json({ message: 'Not authorized to update this donation' });
     }
 
     let updateData = {};
     try {
-      // Parse the stringified data
       updateData = {
         ...req.body,
         location: typeof req.body.location === 'string' ? JSON.parse(req.body.location) : req.body.location,
         availability: typeof req.body.availability === 'string' ? JSON.parse(req.body.availability) : req.body.availability
       };
-
-      // Ensure times are in correct format
-      if (updateData.availability) {
-        updateData.availability.startTime = updateData.availability.startTime || '';
-        updateData.availability.endTime = updateData.availability.endTime || '';
-      }
     } catch (error) {
+      await session.abortTransaction();
       return res.status(400).json({ message: 'Invalid data format' });
     }
 
@@ -192,25 +192,36 @@ router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
         }
         updateData.images = [req.file.path];
       } catch (error) {
-        console.error('Image processing error:', error);
+        await session.abortTransaction();
         return res.status(500).json({ message: 'Error processing image' });
       }
     }
 
-    // Use findOneAndUpdate to ensure atomic operation
     const updatedDonation = await Donation.findOneAndUpdate(
       { _id: donationId },
       updateData,
-      { new: true, runValidators: true }
+      { 
+        new: true, 
+        runValidators: true,
+        session 
+      }
     );
 
+    await session.commitTransaction();
     res.json(updatedDonation);
   } catch (error) {
+    if (session) {
+      await session.abortTransaction();
+    }
     console.error('Update error:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
     res.status(500).json({ message: 'Error updating donation' });
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 });
 

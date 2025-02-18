@@ -244,12 +244,14 @@ const DonationForm = () => {
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
         toast.success('Donation updated successfully');
+        navigate('/my-donations', { replace: true });
       } else {
         response = await donationService.createDonation(formDataToSend);
         toast.success('Donation created successfully');
+        navigate('/my-donations', { replace: true });
       }
   
-      // Clear form state before navigation
+      // Clear form state
       setImage(null);
       setImagePreview(null);
       setFormData({
@@ -274,9 +276,6 @@ const DonationForm = () => {
           coordinates: null
         }
       });
-  
-      // Use replace instead of push to prevent history stacking
-      navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
       toast.error(error.response?.data?.message || 'Failed to save donation');
@@ -426,11 +425,6 @@ const DonationForm = () => {
                           required
                         />
                       </div>
-                      <div className="group">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                          Period
-                        </label>
-                      </div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -448,22 +442,6 @@ const DonationForm = () => {
                             hover:border-purple-400 transition-colors"
                           required
                         />
-                      </div>
-                      <div className="group">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
-                          Period
-                        </label>
-                        <select
-                          name="availability.endPeriod"
-                          value={formData.availability.endPeriod}
-                          onChange={handlePeriodChange}
-                          className="block w-full rounded-lg border-purple-300 shadow-sm 
-                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                            hover:border-purple-400 transition-colors"
-                        >
-                          <option value="AM">AM</option>
-                          <option value="PM">PM</option>
-                        </select>
                       </div>
                     </div>
                   </div>
