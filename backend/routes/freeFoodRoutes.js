@@ -1,13 +1,13 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const FreeFoodListing = require('../models/FreeFoodListing');
-const { upload } = require('../config/cloudinary');
+const { freeFoodUpload } = require('../middleware/upload');
 const { deleteCloudinaryImage } = require('../utils/cloudinary');
 
 const router = express.Router();
 
 // Create new listing with image upload
-router.post('/', auth, upload.single('venueImage'), async (req, res) => {
+router.post('/', auth, freeFoodUpload.single('venueImage'), async (req, res) => {
   try {
     console.log('Request body:', req.body);
     console.log('File:', req.file);
@@ -84,7 +84,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update listing
-router.put('/:id', auth, upload.single('venueImage'), async (req, res) => {
+router.put('/:id', auth, freeFoodUpload.single('venueImage'), async (req, res) => {
   try {
     const listing = await FreeFoodListing.findById(req.params.id);
     if (!listing) {

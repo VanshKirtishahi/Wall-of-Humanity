@@ -9,8 +9,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Create storage engine
-const storage = new CloudinaryStorage({
+// Create storage engine for donations
+const donationStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'donations',
@@ -23,6 +23,21 @@ const storage = new CloudinaryStorage({
   }
 });
 
-const donationUpload = multer({ storage: storage });
+// Create storage engine for avatars
+const avatarStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'avatars',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    transformation: [{ width: 500, height: 500, crop: 'fill' }],
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `avatar-${uniqueSuffix}`;
+    }
+  }
+});
 
-module.exports = { donationUpload, cloudinary }; 
+const donationUpload = multer({ storage: donationStorage });
+const avatarUpload = multer({ storage: avatarStorage });
+
+module.exports = { donationUpload, avatarUpload, cloudinary }; 

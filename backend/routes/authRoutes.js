@@ -6,35 +6,8 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validate');
 const Donation = require('../models/Donation');
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 const emailService = require('../services/email.service');
-const cloudinary = require('cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { avatarUpload } = require('../config/cloudinary');
-
-// Configure multer for avatar uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/avatars/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const uploadMulter = multer({
-  storage: new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-      folder: 'avatars',
-      allowed_formats: ['jpg', 'png', 'jpeg'],
-      transformation: [{ width: 500, height: 500, crop: 'fill' }]
-    }
-  })
-});
 
 // Test route to verify auth routes are working
 router.get('/', (req, res) => {
