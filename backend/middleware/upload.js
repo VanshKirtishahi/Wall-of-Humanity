@@ -1,30 +1,47 @@
-const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 
-const createStorage = (folderPath) => {
-  return new CloudinaryStorage({
-    cloudinary,
-    params: {
-      folder: `wall-of-humanity/${folderPath}`,
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
-      transformation: [{ width: 1000, crop: 'limit' }],
-      format: 'jpg',
-      resource_type: 'auto',
-      public_id: (req, file) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        return `${uniqueSuffix}`;
-      }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Create storage engine for donations
+const donationStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'donations',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }],
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `donation-${uniqueSuffix}`;
     }
-  });
-};
+  }
+});
 
-const donationStorage = createStorage('donations');
-const freeFoodStorage = createStorage('free-food');
-const ngoLogoStorage = createStorage('ngo-logos');
-const ngoCertificateStorage = createStorage('ngo-certificates');
+const donationUpload = multer({ storage: donationStorage });
 
-const uploadConfig = {
+const freeFoodStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'free-food',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
+    transformation: [{ width: 1000, crop: 'limit' }],
+    format: 'jpg',
+    resource_type: 'auto',
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `${uniqueSuffix}`;
+    }
+  }
+});
+
+const freeFoodUpload = multer({
+  storage: freeFoodStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -33,22 +50,27 @@ const uploadConfig = {
       cb(new Error('Not an image! Please upload an image.'), false);
     }
   }
-};
-
-const donationUpload = multer({
-  storage: donationStorage,
-  ...uploadConfig
-});
-
-const freeFoodUpload = multer({
-  storage: freeFoodStorage,
-  ...uploadConfig
 });
 
 // Add NGO upload configurations
+const ngoLogoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'ngo-logos',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 1000, crop: 'limit' }],
+    format: 'jpg',
+    resource_type: 'auto',
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `${uniqueSuffix}`;
+    }
+  }
+});
+
 const ngoLogoUpload = multer({
   storage: ngoLogoStorage,
-  ...uploadConfig,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -58,9 +80,24 @@ const ngoLogoUpload = multer({
   }
 });
 
+const ngoCertificateStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'ngo-certificates',
+    allowed_formats: ['image/jpeg', 'image/png', 'application/pdf'],
+    transformation: [{ width: 1000, crop: 'limit' }],
+    format: 'jpg',
+    resource_type: 'auto',
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `${uniqueSuffix}`;
+    }
+  }
+});
+
 const ngoCertificateUpload = multer({
   storage: ngoCertificateStorage,
-  ...uploadConfig,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
     if (allowedTypes.includes(file.mimetype)) {

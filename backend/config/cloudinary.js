@@ -9,39 +9,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Profile avatar storage configuration
-const avatarStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'wall-of-humanity/avatars',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 400, height: 400, crop: 'fill' }],
-    public_id: (req, file) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      return `avatar-${uniqueSuffix}`;
-    }
-  }
-});
-
-// Free food venue image storage configuration
+// Create storage engine
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'donations',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }]
+    transformation: [{ width: 800, height: 800, crop: 'limit' }],
+    public_id: (req, file) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return `donation-${uniqueSuffix}`;
+    }
   }
 });
 
-const avatarUpload = multer({ 
-  storage: avatarStorage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
+const donationUpload = multer({ storage: storage });
 
-const upload = multer({ storage: storage });
-
-module.exports = { 
-  cloudinary, 
-  avatarUpload,
-  upload
-}; 
+module.exports = { donationUpload, cloudinary }; 
