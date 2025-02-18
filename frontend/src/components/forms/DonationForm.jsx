@@ -222,29 +222,29 @@ const DonationForm = () => {
       };
       formDataToSend.append('location', JSON.stringify(location));
 
-      // Add image if exists
+      // Add image if exists - using 'images' instead of 'image'
       if (image) {
         formDataToSend.append('images', image);
       }
 
-      // Log form data for debugging
+      // Debug log
       for (let [key, value] of formDataToSend.entries()) {
-        console.log(`${key}:`, value instanceof File ? 'File' : value);
+        console.log(`Form Data - ${key}:`, value instanceof File ? 'File' : value);
       }
 
       let response;
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
-        toast.success('Donation updated successfully');
       } else {
         response = await donationService.createDonationWithImage(formDataToSend);
-        toast.success('Donation created successfully');
       }
 
+      toast.success(id ? 'Donation updated successfully' : 'Donation created successfully');
       navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error(error.message || 'Failed to save donation');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save donation';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
