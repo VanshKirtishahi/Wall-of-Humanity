@@ -133,18 +133,13 @@ class DonationService {
         console.log(`Sending ${key}:`, value instanceof File ? 'File' : value);
       }
 
+      // Ensure we're using 'images' field name for Multer
       const response = await api.post('/donations', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        validateStatus: function (status) {
-          return status >= 200 && status < 500;
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
-
-      if (response.status === 400) {
-        throw new Error(response.data.message || 'Validation error');
-      }
 
       if (!response.data) {
         throw new Error('No response data received');
