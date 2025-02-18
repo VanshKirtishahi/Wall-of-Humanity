@@ -133,12 +133,11 @@ class DonationService {
         console.log(`Sending ${key}:`, value instanceof File ? 'File' : value);
       }
 
-      // Ensure we're using 'images' field name for Multer
       const response = await api.post('/donations', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 10000 // Add timeout
       });
 
       if (!response.data) {
@@ -148,6 +147,9 @@ class DonationService {
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
+      if (error.code === 'ERR_NETWORK') {
+        throw new Error('Network error - please try again');
+      }
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
