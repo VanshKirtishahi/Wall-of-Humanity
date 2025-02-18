@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const auth = require('../middleware/auth');
-const { donationUpload: upload } = require('../middleware/upload');
+const { donationUpload } = require('../middleware/upload');
 const Donation = require('../models/Donation');
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -82,7 +82,7 @@ router.get('/my-donations', auth, async (req, res) => {
 });
 
 // Create donation
-router.post('/', auth, upload.single('images'), async (req, res) => {
+router.post('/', auth, donationUpload.single('images'), async (req, res) => {
   try {
     console.log('Request body:', req.body);
     console.log('File:', req.file);
@@ -112,7 +112,6 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Invalid JSON format in request' });
     }
 
-    // Create donation data
     const donationData = {
       type: req.body.type || 'Food',
       title: req.body.title.trim(),
@@ -126,25 +125,20 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       donorName: req.user.name
     };
 
-    // Add image if uploaded successfully
-    if (req.file && req.file.path) {
+    if (req.file) {
       donationData.images = [req.file.path];
     }
 
     const donation = new Donation(donationData);
     const savedDonation = await donation.save();
     
-    console.log('Created donation:', savedDonation);
     res.status(201).json(savedDonation);
   } catch (error) {
     console.error('Error creating donation:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ 
-      message: 'Internal server error', 
-      error: error.message 
-    });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
@@ -163,7 +157,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update donation
-router.put('/:id', auth, upload.single('images'), async (req, res) => {
+router.put('/:id', auth, donationUpload.single('images'), async (req, res) => {
   try {
     const donation = await Donation.findById(req.params.id);
     if (!donation) {
@@ -274,7 +268,7 @@ router.get('/debug-stats', async (req, res) => {
   }
 });
 
-router.post('/create', auth, upload.array('images', 5), async (req, res) => {
+router.post('/create', auth, donationUpload.array('images', 5), async (req, res) => {
   try {
     const imageUrls = req.files.map(file => file.path); // Cloudinary provides the URL in file.path
     

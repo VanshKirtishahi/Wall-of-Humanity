@@ -120,7 +120,7 @@ class DonationService {
 
       // Log form data for debugging
       for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
+        console.log(`${key}:`, value instanceof File ? 'File' : value);
       }
 
       const response = await api.post('/donations', formData, {
