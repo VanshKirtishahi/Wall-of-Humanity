@@ -118,6 +118,14 @@ class DonationService {
         throw new Error('Invalid form data format');
       }
 
+      // Validate form data
+      const requiredFields = ['title', 'description', 'quantity', 'location'];
+      for (let field of requiredFields) {
+        if (!formData.get(field)) {
+          throw new Error(`${field} is required`);
+        }
+      }
+
       // Log form data for debugging
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value instanceof File ? 'File' : value);
@@ -126,8 +134,13 @@ class DonationService {
       const response = await api.post('/donations', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        validateStatus: status => status < 500
       });
+
+      if (response.status === 400) {
+        throw new Error(response.data.message || 'Validation error');
+      }
 
       if (!response.data) {
         throw new Error('No response data received');
@@ -140,7 +153,7 @@ class DonationService {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-      throw new Error(error.response?.data?.message || 'Failed to create donation');
+      throw new Error(error.response?.data?.message || error.message || 'Failed to create donation');
     }
   }
 

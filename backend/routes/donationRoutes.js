@@ -101,17 +101,13 @@ router.post('/', auth, donationUpload.single('images'), async (req, res) => {
       }
       if (req.body.location) {
         location = JSON.parse(req.body.location);
-        if (!location.address || !location.city || !location.state) {
-          return res.status(400).json({ message: 'Location fields are required' });
-        }
-      } else {
-        return res.status(400).json({ message: 'Location is required' });
       }
     } catch (e) {
       console.error('JSON parsing error:', e);
       return res.status(400).json({ message: 'Invalid JSON format in request' });
     }
 
+    // Create donation data
     const donationData = {
       type: req.body.type || 'Food',
       title: req.body.title.trim(),
@@ -125,20 +121,30 @@ router.post('/', auth, donationUpload.single('images'), async (req, res) => {
       donorName: req.user.name
     };
 
-    if (req.file) {
-      donationData.images = [req.file.path];
-    }
+    // Handle image upload
+    try {
+      if (req.file) {
+        donationData.images = [req.file.path];
+      }
 
-    const donation = new Donation(donationData);
-    const savedDonation = await donation.save();
-    
-    res.status(201).json(savedDonation);
+      const donation = new Donation(donationData);
+      const savedDonation = await donation.save();
+      
+      console.log('Created donation:', savedDonation);
+      res.status(201).json(savedDonation);
+    } catch (uploadError) {
+      console.error('Image upload error:', uploadError);
+      return res.status(400).json({ message: 'Failed to upload image' });
+    }
   } catch (error) {
     console.error('Error creating donation:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      details: error.message 
+    });
   }
 });
 
