@@ -197,18 +197,18 @@ const DonationForm = () => {
     try {
       const formDataToSend = new FormData();
 
-      // Add basic fields
+      // Add basic fields with trimmed values
       formDataToSend.append('type', 'Food');
       formDataToSend.append('title', formData.title.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('quantity', formData.quantity.trim());
-      formDataToSend.append('foodType', formData.foodType);
+      formDataToSend.append('foodType', formData.foodType.trim());
 
       // Add availability as JSON string
       const availability = {
         startTime: formData.availability.startTime || '',
         endTime: formData.availability.endTime || '',
-        notes: formData.availability.notes || ''
+        notes: formData.availability.notes?.trim() || ''
       };
       formDataToSend.append('availability', JSON.stringify(availability));
 
@@ -222,14 +222,9 @@ const DonationForm = () => {
       };
       formDataToSend.append('location', JSON.stringify(location));
 
-      // Add image if exists - using 'images' instead of 'image'
+      // Add image if exists
       if (image) {
-        formDataToSend.append('images', image);
-      }
-
-      // Debug log
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`Form Data - ${key}:`, value instanceof File ? 'File' : value);
+        formDataToSend.append('images', image, image.name);
       }
 
       let response;
@@ -252,35 +247,21 @@ const DonationForm = () => {
 
   const validateForm = () => {
     const errors = [];
-    
+
     // Basic field validation
     if (!formData.title?.trim()) errors.push('Title is required');
     if (!formData.description?.trim()) errors.push('Description is required');
     if (!formData.quantity?.trim()) errors.push('Quantity is required');
     if (!formData.foodType?.trim()) errors.push('Food type is required');
+    if (!formData.location?.address?.trim()) errors.push('Address is required');
 
     // Location validation
-    if (!formData.location?.address?.trim()) errors.push('Address is required');
-    if (!formData.location?.city?.trim()) errors.push('City is required');
-    if (!formData.location?.state?.trim()) errors.push('State is required');
-
-    // Time validation
-    if (formData.type === 'Food') {
-      if (!formData.availability?.startTime) {
-        errors.push('Start time is required');
-      }
-      if (!formData.availability?.endTime) {
-        errors.push('End time is required');
-      }
-      if (formData.availability?.startTime && formData.availability?.endTime) {
-        if (formData.availability.startTime >= formData.availability.endTime) {
-          errors.push('End time must be after start time');
-        }
-      }
-    }
+    const location = formData.location;
+    if (!location.city?.trim()) errors.push('City is required');
+    if (!location.state?.trim()) errors.push('State is required');
 
     if (errors.length > 0) {
-      toast.error(errors.join('\n'));
+      errors.forEach(error => toast.error(error));
       return false;
     }
     return true;
