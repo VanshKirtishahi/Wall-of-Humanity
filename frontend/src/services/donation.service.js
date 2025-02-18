@@ -123,6 +123,11 @@ class DonationService {
         throw new Error('Invalid form data format');
       }
 
+      const token = JSON.parse(localStorage.getItem('user'))?.token;
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
       // Validate form data
       const requiredFields = ['title', 'description', 'quantity', 'location'];
       for (let field of requiredFields) {
@@ -131,21 +136,12 @@ class DonationService {
         }
       }
 
-      // Log form data for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value instanceof File ? 'File' : value);
-      }
-
       const response = await api.post('/donations', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        validateStatus: status => status < 500
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (response.status === 400) {
-        throw new Error(response.data.message || 'Validation error');
-      }
 
       if (!response.data) {
         throw new Error('No response data received');

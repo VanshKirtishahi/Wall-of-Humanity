@@ -196,13 +196,18 @@ const DonationForm = () => {
 
     try {
       const formDataToSend = new FormData();
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      if (!user.token) {
+        throw new Error('Authentication required');
+      }
 
       // Add basic fields with trimmed values
       formDataToSend.append('type', 'Food');
       formDataToSend.append('title', formData.title.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('quantity', formData.quantity.trim());
-      formDataToSend.append('foodType', formData.foodType.trim());
+      formDataToSend.append('foodType', formData.foodType);
 
       // Add availability as JSON string
       const availability = {
@@ -222,11 +227,17 @@ const DonationForm = () => {
       };
       formDataToSend.append('location', JSON.stringify(location));
 
+      // Debug log before sending
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(`Sending - ${key}:`, value instanceof File ? 'File' : value);
+      }
+
       // Add image if exists
       if (image) {
         formDataToSend.append('images', image, image.name);
       }
 
+      const token = user.token;
       let response;
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
@@ -238,6 +249,13 @@ const DonationForm = () => {
       navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
+      if (error.message === 'Authentication required') {
+        navigate('/login', { 
+          state: { from: id ? `/donation-form/${id}` : '/donation-form' },
+          replace: true 
+        });
+        return;
+      }
       const errorMessage = error.response?.data?.message || error.message || 'Failed to save donation';
       toast.error(errorMessage);
     } finally {
