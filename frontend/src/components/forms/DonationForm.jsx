@@ -22,9 +22,7 @@ const DonationForm = () => {
     images: [],
     availability: {
       startTime: '',
-      startPeriod: 'AM',
       endTime: '',
-      endPeriod: 'PM',
       notes: ''
     },
     location: {
@@ -71,9 +69,7 @@ const DonationForm = () => {
             images: donation.images || [],
             availability: {
               startTime: donation.availability?.startTime || '',
-              startPeriod: donation.availability?.startPeriod || 'AM',
               endTime: donation.availability?.endTime || '',
-              endPeriod: donation.availability?.endPeriod || 'PM',
               notes: donation.availability?.notes || ''
             },
             location: {
@@ -157,29 +153,11 @@ const DonationForm = () => {
     const { name, value } = e.target;
     const timeField = name.split('.')[1];
     
-    if (!value) return;
-
-    // Parse the time value from the input
-    const [hours, minutes] = value.split(':');
-    const hour = parseInt(hours);
-    
-    // Convert to 12-hour format
-    let period = 'AM';
-    let displayHour = hour;
-    
-    if (hour >= 12) {
-      period = 'PM';
-      displayHour = hour === 12 ? 12 : hour - 12;
-    } else if (hour === 0) {
-      displayHour = 12;
-    }
-    
     setFormData(prev => ({
       ...prev,
       availability: {
         ...prev.availability,
-        [timeField]: `${displayHour}:${minutes}`,
-        [`${timeField}Period`]: period
+        [timeField]: value
       }
     }));
   };
@@ -238,23 +216,12 @@ const DonationForm = () => {
     try {
       const formDataToSend = new FormData();
       
-      // Format times for submission
-      const formattedData = {
-        ...formData,
-        availability: {
-          ...formData.availability,
-          startTime: `${formData.availability.startTime} ${formData.availability.startPeriod}`,
-          endTime: `${formData.availability.endTime} ${formData.availability.endPeriod}`,
-          notes: formData.availability.notes || ''
-        }
-      };
-  
       // Add all form fields to FormData
-      Object.keys(formattedData).forEach(key => {
+      Object.keys(formData).forEach(key => {
         if (key === 'location' || key === 'availability') {
-          formDataToSend.append(key, JSON.stringify(formattedData[key]));
+          formDataToSend.append(key, JSON.stringify(formData[key]));
         } else if (key !== 'images') {
-          formDataToSend.append(key, formattedData[key]);
+          formDataToSend.append(key, formData[key]);
         }
       });
   
@@ -271,7 +238,6 @@ const DonationForm = () => {
         toast.success('Donation created successfully');
       }
   
-      // Navigate first, then clear form
       navigate('/my-donations', { replace: true });
       
       // Clear form state
@@ -286,9 +252,7 @@ const DonationForm = () => {
         images: [],
         availability: {
           startTime: '',
-          startPeriod: 'AM',
           endTime: '',
-          endPeriod: 'PM',
           notes: ''
         },
         location: {
@@ -432,72 +396,36 @@ const DonationForm = () => {
                   </p>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="group flex-1">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                          Start Time
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="time"
-                            name="availability.startTime"
-                            value={formatTimeForDisplay(
-                              formData.availability.startTime,
-                              formData.availability.startPeriod
-                            )}
-                            onChange={handleTimeChange}
-                            className="block w-full rounded-lg border-purple-300 shadow-sm 
-                              focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                              hover:border-purple-400 transition-colors"
-                            required
-                          />
-                          <select
-                            name="availability.startPeriod"
-                            value={formData.availability.startPeriod}
-                            onChange={handlePeriodChange}
-                            className="block w-24 rounded-lg border-purple-300 shadow-sm 
-                              focus:border-purple-500 focus:ring-purple-500 px-2 py-2.5
-                              hover:border-purple-400 transition-colors"
-                          >
-                            <option value="AM">AM</option>
-                            <option value="PM">PM</option>
-                          </select>
-                        </div>
-                      </div>
+                    <div className="group">
+                      <label className="block text-sm font-medium text-purple-700 mb-1.5">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        name="availability.startTime"
+                        value={formData.availability.startTime}
+                        onChange={handleTimeChange}
+                        className="block w-full rounded-lg border-purple-300 shadow-sm 
+                          focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                          hover:border-purple-400 transition-colors"
+                        required
+                      />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <div className="group flex-1">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                          End Time
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="time"
-                            name="availability.endTime"
-                            value={formatTimeForDisplay(
-                              formData.availability.endTime,
-                              formData.availability.endPeriod
-                            )}
-                            onChange={handleTimeChange}
-                            className="block w-full rounded-lg border-purple-300 shadow-sm 
-                              focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                              hover:border-purple-400 transition-colors"
-                            required
-                          />
-                          <select
-                            name="availability.endPeriod"
-                            value={formData.availability.endPeriod}
-                            onChange={handlePeriodChange}
-                            className="block w-24 rounded-lg border-purple-300 shadow-sm 
-                              focus:border-purple-500 focus:ring-purple-500 px-2 py-2.5
-                              hover:border-purple-400 transition-colors"
-                          >
-                            <option value="AM">AM</option>
-                            <option value="PM">PM</option>
-                          </select>
-                        </div>
-                      </div>
+                    <div className="group">
+                      <label className="block text-sm font-medium text-purple-700 mb-1.5">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        name="availability.endTime"
+                        value={formData.availability.endTime}
+                        onChange={handleTimeChange}
+                        className="block w-full rounded-lg border-purple-300 shadow-sm 
+                          focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                          hover:border-purple-400 transition-colors"
+                        required
+                      />
                     </div>
                   </div>
 
