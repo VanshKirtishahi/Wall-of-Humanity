@@ -164,13 +164,8 @@ const DonationForm = () => {
     const hour = parseInt(hours);
     
     // Determine period (AM/PM)
-    let period = 'AM';
-    let displayHour = hour;
-    
-    if (hour >= 12) {
-      period = 'PM';
-      displayHour = hour === 12 ? 12 : hour - 12;
-    }
+    let period = hour >= 12 ? 'PM' : 'AM';
+    let displayHour = hour % 12;
     displayHour = displayHour === 0 ? 12 : displayHour;
     
     // Format time in 12-hour format
@@ -425,37 +420,69 @@ const DonationForm = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                       <div className="group flex-1">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5">
                           Start Time
                         </label>
-                        <input
-                          type="time"
-                          name="availability.startTime"
-                          value={formData.availability.startTime}
-                          onChange={handleTimeChange}
-                          className="block w-full rounded-lg border-purple-300 shadow-sm 
-                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                            hover:border-purple-400 transition-colors"
-                          required
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            name="availability.startTime"
+                            value={formatTimeForDisplay(
+                              formData.availability.startTime,
+                              formData.availability.startPeriod
+                            )}
+                            onChange={handleTimeChange}
+                            className="block w-full rounded-lg border-purple-300 shadow-sm 
+                              focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                              hover:border-purple-400 transition-colors"
+                            required
+                          />
+                          <select
+                            name="availability.startPeriod"
+                            value={formData.availability.startPeriod}
+                            onChange={handlePeriodChange}
+                            className="block w-24 rounded-lg border-purple-300 shadow-sm 
+                              focus:border-purple-500 focus:ring-purple-500 px-2 py-2.5
+                              hover:border-purple-400 transition-colors"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <div className="group flex-1">
-                        <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                        <label className="block text-sm font-medium text-purple-700 mb-1.5">
                           End Time
                         </label>
-                        <input
-                          type="time"
-                          name="availability.endTime"
-                          value={formData.availability.endTime}
-                          onChange={handleTimeChange}
-                          className="block w-full rounded-lg border-purple-300 shadow-sm 
-                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                            hover:border-purple-400 transition-colors"
-                          required
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            name="availability.endTime"
+                            value={formatTimeForDisplay(
+                              formData.availability.endTime,
+                              formData.availability.endPeriod
+                            )}
+                            onChange={handleTimeChange}
+                            className="block w-full rounded-lg border-purple-300 shadow-sm 
+                              focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
+                              hover:border-purple-400 transition-colors"
+                            required
+                          />
+                          <select
+                            name="availability.endPeriod"
+                            value={formData.availability.endPeriod}
+                            onChange={handlePeriodChange}
+                            className="block w-24 rounded-lg border-purple-300 shadow-sm 
+                              focus:border-purple-500 focus:ring-purple-500 px-2 py-2.5
+                              hover:border-purple-400 transition-colors"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
