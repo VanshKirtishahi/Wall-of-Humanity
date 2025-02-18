@@ -157,6 +157,11 @@ const DonationForm = () => {
     const { name, value } = e.target;
     const timeField = name.split('.')[1];
     
+    // Validate time format
+    if (!value.match(/^(0[0-9]|1[0-2]):[0-5][0-9]$/)) {
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       availability: {
@@ -169,23 +174,26 @@ const DonationForm = () => {
   const handlePeriodChange = (e) => {
     const { name, value } = e.target;
     const periodField = name.split('.')[1];
+    const timeField = periodField.replace('Period', 'Time');
     
     setFormData(prev => ({
       ...prev,
       availability: {
         ...prev.availability,
-        [periodField]: value
+        [periodField]: value,
+        [timeField]: prev.availability[timeField] // Preserve the time when changing period
       }
     }));
   };
 
-  // Function to format time for display
+  // Update the formatTimeForDisplay function
   const formatTimeForDisplay = (time, period) => {
     if (!time) return '';
     
     const [hours, minutes] = time.split(':');
     let hour = parseInt(hours);
     
+    // Convert to 24-hour format for storage
     if (period === 'PM' && hour < 12) {
       hour += 12;
     } else if (period === 'AM' && hour === 12) {
@@ -203,21 +211,33 @@ const DonationForm = () => {
     try {
       const formDataToSend = new FormData();
       
+      // Format times before sending
+      const formattedData = {
+        ...formData,
+        availability: {
+          ...formData.availability,
+          startTime: formatTimeForDisplay(
+            formData.availability.startTime,
+            formData.availability.startPeriod
+          ),
+          endTime: formatTimeForDisplay(
+            formData.availability.endTime,
+            formData.availability.endPeriod
+          )
+        }
+      };
+  
       // Add all form fields to FormData
-      Object.keys(formData).forEach(key => {
+      Object.keys(formattedData).forEach(key => {
         if (key === 'location' || key === 'availability') {
-          formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (key !== 'images') { // Skip images array to prevent duplicate entries
-          formDataToSend.append(key, formData[key]);
+          formDataToSend.append(key, JSON.stringify(formattedData[key]));
+        } else if (key !== 'images') {
+          formDataToSend.append(key, formattedData[key]);
         }
       });
   
-      // Handle image upload
       if (image) {
         formDataToSend.append('image', image);
-      } else if (formData.images && formData.images.length > 0 && !id) {
-        // Keep existing image for new donations
-        formDataToSend.append('images', formData.images[0]);
       }
   
       let response;
@@ -255,7 +275,8 @@ const DonationForm = () => {
         }
       });
   
-      navigate('/my-donations');
+      // Use replace instead of push to prevent history stacking
+      navigate('/my-donations', { replace: true });
     } catch (error) {
       console.error('Submission error:', error);
       toast.error(error.response?.data?.message || 'Failed to save donation');
@@ -409,17 +430,6 @@ const DonationForm = () => {
                         <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
                           Period
                         </label>
-                        <select
-                          name="availability.startPeriod"
-                          value={formData.availability.startPeriod}
-                          onChange={handlePeriodChange}
-                          className="block w-full rounded-lg border-purple-300 shadow-sm 
-                            focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                            hover:border-purple-400 transition-colors"
-                        >
-                          <option value="AM">AM</option>
-                          <option value="PM">PM</option>
-                        </select>
                       </div>
                     </div>
 

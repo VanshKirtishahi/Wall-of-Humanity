@@ -169,21 +169,20 @@ router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
 
     let updateData = {};
     try {
+      // Parse the stringified data
       updateData = {
         ...req.body,
         location: typeof req.body.location === 'string' ? JSON.parse(req.body.location) : req.body.location,
         availability: typeof req.body.availability === 'string' ? JSON.parse(req.body.availability) : req.body.availability
       };
+
+      // Ensure times are in correct format
+      if (updateData.availability) {
+        updateData.availability.startTime = updateData.availability.startTime || '';
+        updateData.availability.endTime = updateData.availability.endTime || '';
+      }
     } catch (error) {
       return res.status(400).json({ message: 'Invalid data format' });
-    }
-
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'quantity'];
-    for (const field of requiredFields) {
-      if (!updateData[field]) {
-        return res.status(400).json({ message: `${field} is required` });
-      }
     }
 
     if (req.file) {
@@ -198,8 +197,9 @@ router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
       }
     }
 
-    const updatedDonation = await Donation.findByIdAndUpdate(
-      donationId,
+    // Use findOneAndUpdate to ensure atomic operation
+    const updatedDonation = await Donation.findOneAndUpdate(
+      { _id: donationId },
       updateData,
       { new: true, runValidators: true }
     );
