@@ -21,8 +21,8 @@ const DonationForm = () => {
     foodType: '',
     images: [],
     availability: {
-      startTime: '',
-      endTime: '',
+      time: '',
+      period: 'AM',
       notes: ''
     },
     location: {
@@ -68,8 +68,8 @@ const DonationForm = () => {
             foodType: donation.foodType || '',
             images: donation.images || [],
             availability: {
-              startTime: donation.availability?.startTime || '',
-              endTime: donation.availability?.endTime || '',
+              time: donation.availability?.time || '',
+              period: donation.availability?.period || 'AM',
               notes: donation.availability?.notes || ''
             },
             location: {
@@ -150,14 +150,25 @@ const DonationForm = () => {
   };
 
   const handleTimeChange = (e) => {
-    const { name, value } = e.target;
-    const timeField = name.split('.')[1];
-    
+    const { value } = e.target;
+    if (!value) return;
+
     setFormData(prev => ({
       ...prev,
       availability: {
         ...prev.availability,
-        [timeField]: value
+        time: value
+      }
+    }));
+  };
+
+  const handlePeriodChange = (e) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        period: value
       }
     }));
   };
@@ -176,36 +187,6 @@ const DonationForm = () => {
     }
     
     return `${hour.toString().padStart(2, '0')}:${minutes}`;
-  };
-
-  const handlePeriodChange = (e) => {
-    const { name, value } = e.target;
-    const periodField = name.split('.')[1];
-    const timeField = periodField.replace('Period', 'Time');
-    
-    // Get current time
-    const currentTime = formData.availability[timeField];
-    if (!currentTime) return;
-    
-    // Convert time based on new period
-    const [hours, minutes] = currentTime.split(':');
-    let hour = parseInt(hours);
-    
-    // Adjust hour based on period change
-    if (value === 'PM' && hour < 12) {
-      hour += 12;
-    } else if (value === 'AM' && hour >= 12) {
-      hour = hour === 12 ? 0 : hour - 12;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      availability: {
-        ...prev.availability,
-        [periodField]: value,
-        [timeField]: `${hour}:${minutes}`
-      }
-    }));
   };
 
   const handleSubmit = async (e) => {
@@ -251,8 +232,8 @@ const DonationForm = () => {
         foodType: '',
         images: [],
         availability: {
-          startTime: '',
-          endTime: '',
+          time: '',
+          period: 'AM',
           notes: ''
         },
         location: {
@@ -378,32 +359,19 @@ const DonationForm = () => {
             {formData.type === 'Food' && (
               <div className="bg-gradient-to-r from-purple-50 to-purple-100/30 p-6 rounded-xl shadow-sm">
                 <h3 className="text-xl font-semibold text-purple-900 mb-4 flex items-center">
-                  <span className="bg-purple-100 p-2 rounded-lg mr-2">🍽️</span>
-                  Food Details
+                  <span className="bg-purple-100 p-2 rounded-lg mr-2">🕒</span>
+                  Pickup Time Availability
                 </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Pickup Time Availability</h3>
-                    <div className="tooltip" title="Specify when the food donation can be picked up">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-gray-500 italic mb-4">
-                    Please specify the time window when the food donation will be available for pickup
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="group">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="group flex-1">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                        Start Time
+                        Pickup Time
                       </label>
                       <input
                         type="time"
-                        name="availability.startTime"
-                        value={formData.availability.startTime}
+                        name="availability.time"
+                        value={formData.availability.time}
                         onChange={handleTimeChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
@@ -411,21 +379,21 @@ const DonationForm = () => {
                         required
                       />
                     </div>
-
-                    <div className="group">
+                    <div className="group w-32">
                       <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                        End Time
+                        Period
                       </label>
-                      <input
-                        type="time"
-                        name="availability.endTime"
-                        value={formData.availability.endTime}
-                        onChange={handleTimeChange}
+                      <select
+                        name="availability.period"
+                        value={formData.availability.period}
+                        onChange={handlePeriodChange}
                         className="block w-full rounded-lg border-purple-300 shadow-sm 
                           focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                           hover:border-purple-400 transition-colors"
-                        required
-                      />
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
                     </div>
                   </div>
 
