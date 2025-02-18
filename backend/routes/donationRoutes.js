@@ -92,6 +92,7 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
+    // Parse JSON fields
     let availability = {};
     let location = {};
 
@@ -101,6 +102,11 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
       }
       if (req.body.location) {
         location = JSON.parse(req.body.location);
+        if (!location.address || !location.city || !location.state) {
+          return res.status(400).json({ message: 'Location fields are required' });
+        }
+      } else {
+        return res.status(400).json({ message: 'Location is required' });
       }
     } catch (e) {
       console.error('JSON parsing error:', e);
@@ -109,9 +115,9 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
 
     const donationData = {
       type: req.body.type || 'Food',
-      title: req.body.title,
-      description: req.body.description,
-      quantity: req.body.quantity,
+      title: req.body.title.trim(),
+      description: req.body.description.trim(),
+      quantity: req.body.quantity.trim(),
       foodType: req.body.foodType,
       availability,
       location,
@@ -131,7 +137,10 @@ router.post('/', auth, upload.single('images'), async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message 
+    });
   }
 });
 

@@ -114,16 +114,20 @@ class DonationService {
 
   async createDonationWithImage(formData) {
     try {
+      if (!(formData instanceof FormData)) {
+        throw new Error('Invalid form data format');
+      }
+
       const response = await api.post('/donations', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       if (!response.data) {
         throw new Error('No response data received');
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
@@ -131,7 +135,10 @@ class DonationService {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-      throw new Error(error.response?.data?.message || 'Failed to create donation');
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error('Failed to create donation');
     }
   }
 

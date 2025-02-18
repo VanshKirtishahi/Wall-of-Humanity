@@ -201,57 +201,49 @@ const DonationForm = () => {
     setIsLoading(true);
 
     try {
-      // Validate required fields
       if (!formData.title || !formData.description || !formData.quantity) {
         toast.error('Please fill in all required fields');
         setIsLoading(false);
         return;
       }
 
-      // Validate location
-      if (!formData.location.address || !formData.location.city || !formData.location.state) {
+      if (!formData.location?.address || !formData.location?.city || !formData.location?.state) {
         toast.error('Please fill in all location fields');
         setIsLoading(false);
         return;
       }
 
-      const formDataToSend = new FormData();
+      const form = new FormData();
 
       // Add basic fields
-      formDataToSend.append('type', formData.type);
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('quantity', formData.quantity);
-      formDataToSend.append('foodType', formData.foodType);
+      form.append('type', formData.type);
+      form.append('title', formData.title);
+      form.append('description', formData.description);
+      form.append('quantity', formData.quantity);
+      form.append('foodType', formData.foodType);
 
-      // Add availability
+      // Format and add availability
       const availability = {
-        ...formData.availability,
         startTime: formData.availability.startTime 
           ? `${formData.availability.startTime} ${formData.availability.startPeriod}`
           : '',
         endTime: formData.availability.endTime 
           ? `${formData.availability.endTime} ${formData.availability.endPeriod}`
-          : ''
+          : '',
+        notes: formData.availability.notes || ''
       };
-      formDataToSend.append('availability', JSON.stringify(availability));
+      form.append('availability', JSON.stringify(availability));
 
       // Add location
-      formDataToSend.append('location', JSON.stringify(formData.location));
+      form.append('location', JSON.stringify(formData.location));
 
       // Add image if exists
-      if (image) {
-        formDataToSend.append('images', image);
+      if (image instanceof File) {
+        form.append('images', image);
       }
 
-      let response;
-      if (id) {
-        response = await donationService.updateDonation(id, formDataToSend);
-      } else {
-        response = await donationService.createDonationWithImage(formDataToSend);
-      }
-
-      toast.success(`Donation ${id ? 'updated' : 'created'} successfully!`);
+      const response = await donationService.createDonationWithImage(form);
+      toast.success('Donation created successfully!');
       navigate('/my-donations');
     } catch (error) {
       console.error('Error submitting form:', error);
