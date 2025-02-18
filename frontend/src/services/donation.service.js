@@ -128,6 +128,15 @@ class DonationService {
         throw new Error('Authentication required');
       }
 
+      // Validate required fields before sending
+      const requiredFields = ['title', 'description', 'quantity', 'foodType', 'location'];
+      for (let field of requiredFields) {
+        const value = formData.get(field);
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          throw new Error(`${field} is required`);
+        }
+      }
+
       // Log form data for debugging
       for (let [key, value] of formData.entries()) {
         console.log(`Sending ${key}:`, value instanceof File ? 'File' : value);
@@ -137,7 +146,9 @@ class DonationService {
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        timeout: 10000 // Add timeout
+        validateStatus: function (status) {
+          return status >= 200 && status < 300;
+        }
       });
 
       if (!response.data) {
@@ -147,8 +158,8 @@ class DonationService {
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
-      if (error.code === 'ERR_NETWORK') {
-        throw new Error('Network error - please try again');
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Validation error - please check all required fields');
       }
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
