@@ -178,11 +178,24 @@ router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'Invalid data format' });
     }
 
-    if (req.file) {
-      if (donation.images && donation.images.length > 0) {
-        await deleteCloudinaryImage(donation.images[0]);
+    // Validate required fields
+    const requiredFields = ['title', 'description', 'quantity'];
+    for (const field of requiredFields) {
+      if (!updateData[field]) {
+        return res.status(400).json({ message: `${field} is required` });
       }
-      updateData.images = [req.file.path];
+    }
+
+    if (req.file) {
+      try {
+        if (donation.images && donation.images.length > 0) {
+          await deleteCloudinaryImage(donation.images[0]);
+        }
+        updateData.images = [req.file.path];
+      } catch (error) {
+        console.error('Image processing error:', error);
+        return res.status(500).json({ message: 'Error processing image' });
+      }
     }
 
     const updatedDonation = await Donation.findByIdAndUpdate(

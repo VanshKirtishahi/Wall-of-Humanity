@@ -207,13 +207,17 @@ const DonationForm = () => {
       Object.keys(formData).forEach(key => {
         if (key === 'location' || key === 'availability') {
           formDataToSend.append(key, JSON.stringify(formData[key]));
-        } else if (key !== 'images') { // Skip images array
+        } else if (key !== 'images') { // Skip images array to prevent duplicate entries
           formDataToSend.append(key, formData[key]);
         }
       });
   
+      // Handle image upload
       if (image) {
         formDataToSend.append('image', image);
+      } else if (formData.images && formData.images.length > 0 && !id) {
+        // Keep existing image for new donations
+        formDataToSend.append('images', formData.images[0]);
       }
   
       let response;
@@ -224,6 +228,32 @@ const DonationForm = () => {
         response = await donationService.createDonation(formDataToSend);
         toast.success('Donation created successfully');
       }
+  
+      // Clear form state before navigation
+      setImage(null);
+      setImagePreview(null);
+      setFormData({
+        type: 'Food',
+        title: '',
+        description: '',
+        quantity: '',
+        foodType: '',
+        images: [],
+        availability: {
+          startTime: '',
+          startPeriod: 'AM',
+          endTime: '',
+          endPeriod: 'PM',
+          notes: ''
+        },
+        location: {
+          address: '',
+          area: '',
+          city: '',
+          state: '',
+          coordinates: null
+        }
+      });
   
       navigate('/my-donations');
     } catch (error) {
