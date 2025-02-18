@@ -157,16 +157,31 @@ const DonationForm = () => {
     const { name, value } = e.target;
     const timeField = name.split('.')[1];
     
-    // Validate time format
-    if (!value.match(/^(0[0-9]|1[0-2]):[0-5][0-9]$/)) {
-      return;
-    }
+    if (!value) return;
 
+    // Parse the 24-hour time format from input
+    const [hours, minutes] = value.split(':');
+    const hour = parseInt(hours);
+    
+    // Determine period (AM/PM)
+    let period = 'AM';
+    let displayHour = hour;
+    
+    if (hour >= 12) {
+      period = 'PM';
+      displayHour = hour === 12 ? 12 : hour - 12;
+    }
+    displayHour = displayHour === 0 ? 12 : displayHour;
+    
+    // Format time in 12-hour format
+    const timeIn12Hour = `${displayHour.toString().padStart(2, '0')}:${minutes}`;
+    
     setFormData(prev => ({
       ...prev,
       availability: {
         ...prev.availability,
-        [timeField]: value
+        [timeField]: timeIn12Hour,
+        [`${timeField}Period`]: period
       }
     }));
   };
@@ -186,15 +201,14 @@ const DonationForm = () => {
     }));
   };
 
-  // Update the formatTimeForDisplay function
   const formatTimeForDisplay = (time, period) => {
     if (!time) return '';
     
     const [hours, minutes] = time.split(':');
     let hour = parseInt(hours);
     
-    // Convert to 24-hour format for storage
-    if (period === 'PM' && hour < 12) {
+    // Convert to 24-hour format for HTML time input
+    if (period === 'PM' && hour !== 12) {
       hour += 12;
     } else if (period === 'AM' && hour === 12) {
       hour = 0;
