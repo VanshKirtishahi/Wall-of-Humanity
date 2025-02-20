@@ -38,6 +38,10 @@ api.interceptors.response.use(
       console.error('Network Error:', error);
       return Promise.reject(new Error('Network error - please check your connection'));
     }
+    if (error.response?.status === 400) {
+      console.error('Bad Request:', error.response.data);
+      return Promise.reject(new Error(error.response.data.message || 'Invalid request'));
+    }
     console.error('API Error:', error);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
