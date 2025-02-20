@@ -4,7 +4,8 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 60000,
   maxBodyLength: Infinity,
-  maxContentLength: Infinity
+  maxContentLength: Infinity,
+  withCredentials: true
 });
 
 // Add request interceptor for auth token
@@ -20,8 +21,10 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Don't override Content-Type for FormData
-    if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
+    // Handle FormData content type
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data';
+    } else if (!config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
     
@@ -46,8 +49,8 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Network error - please check your connection'));
     }
     if (error.response?.status === 400) {
-      console.error('Bad Request:', error.response.data);
-      return Promise.reject(new Error(error.response.data.message || 'Invalid request'));
+      const message = error.response.data?.message || 'Invalid request data';
+      return Promise.reject(new Error(message));
     }
     if (error.response?.status === 401) {
       localStorage.removeItem('user');
