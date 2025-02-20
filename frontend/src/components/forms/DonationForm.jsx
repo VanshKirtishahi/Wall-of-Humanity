@@ -234,7 +234,7 @@ const DonationForm = () => {
 
       // Add image if exists
       if (image) {
-        formDataToSend.append('images', image, image.name);
+        formDataToSend.append('image', image, image.name);
       }
 
       const token = user.token;

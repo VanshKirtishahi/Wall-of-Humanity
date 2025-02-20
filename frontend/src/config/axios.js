@@ -23,7 +23,7 @@ api.interceptors.request.use(
     
     // Handle FormData content type
     if (config.data instanceof FormData) {
-      delete config.headers['Content-Type']; // Let the browser set this automatically
+      delete config.headers['Content-Type']; // Let browser set this
     } else if (!config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
@@ -51,7 +51,6 @@ api.interceptors.response.use(
 
     if (error.response?.status === 400) {
       const message = error.response.data?.message || 'Invalid request data';
-      console.error('Bad Request Details:', error.response.data);
       return Promise.reject(new Error(message));
     }
 
