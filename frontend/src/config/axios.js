@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL.replace(/\/api\/?$/, ''),
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 60000,
   maxBodyLength: Infinity,
   maxContentLength: Infinity
@@ -10,8 +10,10 @@ const api = axios.create({
 // Add request interceptor for auth token
 api.interceptors.request.use(
   (config) => {
-    // Remove duplicate /api prefix if present
-    config.url = config.url.replace(/^\/api\/api/, '/api');
+    // Ensure /api prefix
+    if (!config.url.startsWith('/api/')) {
+      config.url = `/api${config.url}`;
+    }
     
     const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
     if (token) {
