@@ -1,19 +1,16 @@
 import axios from 'axios';
 
-const isProduction = import.meta.env.PROD;
-const baseURL = isProduction 
-  ? 'https://wall-of-humanity-xhoc.onrender.com'
-  : 'http://localhost:5000';
-
 const api = axios.create({
-  baseURL,
-  withCredentials: true
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 60000,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity
 });
 
 // Add request interceptor for auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,8 +32,12 @@ api.interceptors.request.use(
 
 // Add response interceptor to handle errors
 api.interceptors.response.use(
-  response => response,
-  error => {
+  (response) => response,
+  (error) => {
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Network Error:', error);
+      return Promise.reject(new Error('Network error - please check your connection'));
+    }
     console.error('API Error:', error);
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
