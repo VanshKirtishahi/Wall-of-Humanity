@@ -40,7 +40,7 @@ const login = async (email, password) => {
       throw new Error('Email and password cannot be empty');
     }
 
-    const response = await api.post('/auth/login', {
+    const response = await api.post('auth/login', {
       email: trimmedEmail,
       password: trimmedPassword
     });

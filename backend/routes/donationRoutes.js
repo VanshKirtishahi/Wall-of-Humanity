@@ -92,6 +92,7 @@ router.post('/', auth, donationUpload.array('images', 5), async (req, res) => {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 
+
     let availability = {};
     let location = {};
 
@@ -154,7 +155,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update donation
-router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
+router.put('/:id', auth, donationUpload.array('images', 5), async (req, res) => {
   let session;
   try {
     session = await mongoose.startSession();
@@ -185,15 +186,15 @@ router.put('/:id', auth, donationUpload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'Invalid data format' });
     }
 
-    if (req.file) {
+    if (req.files && req.files.length > 0) {
       try {
         if (donation.images && donation.images.length > 0) {
-          await deleteCloudinaryImage(donation.images[0]);
+          await Promise.all(donation.images.map(imageUrl => deleteCloudinaryImage(imageUrl)));
         }
-        updateData.images = [req.file.path];
+        updateData.images = req.files.map(file => file.path);
       } catch (error) {
         await session.abortTransaction();
-        return res.status(500).json({ message: 'Error processing image' });
+        return res.status(500).json({ message: 'Error processing images' });
       }
     }
 

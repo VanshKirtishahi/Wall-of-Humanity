@@ -1,20 +1,29 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 60000,
+  baseURL: import.meta.env.VITE_API_URL.replace(/\/api\/?$/, ''), // Remove trailing /api if present
+  timeout: 30000, // 30 seconds timeout
   maxBodyLength: Infinity,
   maxContentLength: Infinity,
-  withCredentials: true
+  withCredentials: true,
+  headers: {
+    'Accept': 'application/json'
+  }
 });
 
 // Add request interceptor for auth token
 api.interceptors.request.use(
   (config) => {
-    // Ensure /api prefix
-    if (!config.url.startsWith('/api/')) {
-      config.url = `/api${config.url}`;
+    // Clean up the URL to prevent double slashes
+    let url = config.url || '';
+    url = url.replace(/^\/+/, '').replace(/\/+/g, '/');
+    
+    // Ensure proper /api prefix
+    if (!url.startsWith('api/')) {
+      url = `api/${url}`;
     }
+    
+    config.url = url;
     
     const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
     if (token) {
@@ -28,6 +37,7 @@ api.interceptors.request.use(
       config.headers['Content-Type'] = 'application/json';
     }
     
+    console.log('Final request URL:', config.url); // Debug log
     return config;
   },
   (error) => Promise.reject(error)

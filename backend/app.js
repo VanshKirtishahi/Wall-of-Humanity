@@ -15,9 +15,11 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:3000',
       'https://wall-of-humanity.vercel.app',
-      'https://wall-of-humanity-xhoc.onrender.com'
+      'https://wall-of-humanity-xhoc.onrender.com',
+      'https://wall-of-humanity-dzyv1465l-vanshkirtishahis-projects.vercel.app'
     ];
     
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {

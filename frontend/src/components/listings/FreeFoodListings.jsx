@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../../config/axios';
-import FreeFoodCard from '../donations/FreeFoodCard';
-import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import api from '../../config/axios';
+import { useAuth } from '../../context/AuthContext';
+import FreeFoodCard from '../donations/FreeFoodCard';
 
 const FreeFoodListings = () => {
   const navigate = useNavigate();
@@ -19,8 +19,16 @@ const FreeFoodListings = () => {
 
   const fetchListings = async () => {
     try {
-      const response = await api.get('/api/free-food');
-      setListings(response.data);
+      setLoading(true);
+      const response = await api.get('/api/free-food', {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
+      
+      // Filter listings to only show the current user's listings
+      const userListings = response.data.filter(listing => listing.uploadedBy === user?._id);
+      setListings(userListings);
       setError(null);
     } catch (err) {
       console.error('Error fetching listings:', err);

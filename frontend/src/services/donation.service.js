@@ -4,13 +4,16 @@ class DonationService {
   async getAllDonations() {
     try {
       const response = await api.get('/donations');
-      // Filter out FreeFood listings from other users
       const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Filter donations to only show:
+      // 1. All regular donations
+      // 2. Only the current user's FreeFood listings
       const filteredDonations = response.data.filter(donation => {
-        // Show all regular donations
-        if (!donation.isFreeFoodListing) return true;
-        // Only show FreeFood listings if they belong to the current user
-        return donation.userId === user.id;
+        if (donation.isFreeFoodListing) {
+          return donation.userId === user.id;
+        }
+        return true;
       });
       
       return filteredDonations;
@@ -74,26 +77,48 @@ class DonationService {
 
   async updateDonation(id, formData) {
     try {
+      if (!(formData instanceof FormData)) {
+        throw new Error('Invalid form data format');
+      }
+  
       const token = JSON.parse(localStorage.getItem('user'))?.token;
-      if (!token) throw new Error('Authentication required');
-
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+  
+      // Log form data for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log(`Updating ${key}:`, value instanceof File ? 'File' : value);
+      }
+  
       const response = await api.put(`/donations/${id}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        maxContentLength: 10 * 1024 * 1024,
+        maxBodyLength: 10 * 1024 * 1024,
+        timeout: 60000
       });
-      
+  
       if (!response.data) {
         throw new Error('No response data received');
       }
-
+  
       return response.data;
     } catch (error) {
+      console.error('Update donation error:', error);
+      
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.message || 'Invalid file upload - please try again';
+        throw new Error(errorMessage);
+      }
+      
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
+      
       throw new Error(error.response?.data?.message || 'Failed to update donation');
     }
   }
@@ -136,21 +161,13 @@ class DonationService {
         throw new Error('Authentication required');
       }
 
-      // Log form data for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`Sending ${key}:`, value instanceof File ? 'File' : value);
-      }
-
-      // Ensure we're using the correct field name for images
-      const hasImageField = Array.from(formData.keys()).includes('images');
-      if (!hasImageField) {
-        throw new Error('Image field missing');
-      }
-
       const response = await api.post('/donations', formData, {
         headers: {
           'Authorization': `Bearer ${token}`
-        }
+        },
+        timeout: 60000,
+        maxContentLength: 10 * 1024 * 1024,
+        maxBodyLength: 10 * 1024 * 1024
       });
 
       if (!response.data) {
@@ -160,11 +177,17 @@ class DonationService {
       return response.data;
     } catch (error) {
       console.error('Create donation error:', error);
+      
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Invalid file upload - please try again');
+      }
+      
       if (error.response?.status === 401) {
         localStorage.removeItem('user');
         throw new Error('Authentication required');
       }
-      throw new Error(error.response?.data?.message || error.message || 'Failed to create donation');
+      
+      throw new Error(error.response?.data?.message || 'Failed to create donation');
     }
   }
 

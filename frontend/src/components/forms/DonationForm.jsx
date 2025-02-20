@@ -203,41 +203,36 @@ const DonationForm = () => {
       }
 
       // Add basic fields with trimmed values
-      formDataToSend.append('type', 'Food');
-      formDataToSend.append('title', formData.title.trim());
-      formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('quantity', formData.quantity.trim());
-      formDataToSend.append('foodType', formData.foodType);
+      Object.entries({
+        type: 'Food',
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        quantity: formData.quantity.trim(),
+        foodType: formData.foodType,
+        availability: JSON.stringify({
+          startTime: formData.availability.startTime || '',
+          endTime: formData.availability.endTime || '',
+          notes: formData.availability.notes?.trim() || ''
+        }),
+        location: JSON.stringify({
+          address: formData.location.address.trim(),
+          area: formData.location.area.trim(),
+          city: formData.location.city.trim(),
+          state: formData.location.state.trim(),
+          coordinates: formData.location.coordinates || null
+        })
+      }).forEach(([key, value]) => formDataToSend.append(key, value));
 
-      // Add availability as JSON string
-      const availability = {
-        startTime: formData.availability.startTime || '',
-        endTime: formData.availability.endTime || '',
-        notes: formData.availability.notes?.trim() || ''
-      };
-      formDataToSend.append('availability', JSON.stringify(availability));
+      // Add image if exists
+      if (image instanceof File) {
+        formDataToSend.append('images', image);
+      }
 
-      // Add location as JSON string
-      const location = {
-        address: formData.location.address.trim(),
-        area: formData.location.area.trim(),
-        city: formData.location.city.trim(),
-        state: formData.location.state.trim(),
-        coordinates: formData.location.coordinates || null
-      };
-      formDataToSend.append('location', JSON.stringify(location));
-
-      // Debug log before sending
+      // Debug log
       for (let [key, value] of formDataToSend.entries()) {
         console.log(`Sending - ${key}:`, value instanceof File ? 'File' : value);
       }
 
-      // Add image if exists
-      if (image) {
-        formDataToSend.append('image', image, image.name);
-      }
-
-      const token = user.token;
       let response;
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);
