@@ -23,7 +23,7 @@ api.interceptors.request.use(
     
     // Handle FormData content type
     if (config.data instanceof FormData) {
-      config.headers['Content-Type'] = 'multipart/form-data';
+      delete config.headers['Content-Type']; // Let the browser set this automatically
     } else if (!config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
@@ -41,23 +41,27 @@ api.interceptors.response.use(
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
-      data: error.response?.data
+      data: error.response?.data,
+      message: error.response?.data?.message
     });
 
     if (error.code === 'ERR_NETWORK') {
-      console.error('Network Error:', error);
       return Promise.reject(new Error('Network error - please check your connection'));
     }
+
     if (error.response?.status === 400) {
       const message = error.response.data?.message || 'Invalid request data';
+      console.error('Bad Request Details:', error.response.data);
       return Promise.reject(new Error(message));
     }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       window.location.href = '/login';
       return Promise.reject(new Error('Authentication required'));
     }
+
     return Promise.reject(error);
   }
 );
