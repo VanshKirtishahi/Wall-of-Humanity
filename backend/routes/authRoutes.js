@@ -8,6 +8,29 @@ const { validateRegister, validateLogin } = require('../middleware/validate');
 const Donation = require('../models/Donation');
 const emailService = require('../services/email.service');
 const { avatarUpload } = require('../config/cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Helper function to delete image from Cloudinary
+const deleteCloudinaryImage = async (imageUrl) => {
+  try {
+    if (!imageUrl) return;
+    
+    // Extract public ID from the URL
+    const publicId = imageUrl.split('/upload/')[1].split('/')[1].split('.')[0];
+    if (publicId) {
+      await cloudinary.uploader.destroy(`wall-of-humanity/avatars/${publicId}`);
+    }
+  } catch (error) {
+    console.error('Error deleting image from Cloudinary:', error);
+  }
+};
 
 // Test route to verify auth routes are working
 router.get('/', (req, res) => {
@@ -207,18 +230,14 @@ router.put('/profile', auth, avatarUpload.single('avatar'), async (req, res) => 
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Handle avatar upload
+    // Handle avatar upload and deletion
     if (req.file) {
-      try {
-        // Delete old avatar if exists
-        if (user.avatarUrl && user.avatarUrl.includes('cloudinary')) {
-          const publicId = user.avatarUrl.split('/').pop().split('.')[0];
-          await cloudinary.uploader.destroy(`wall-of-humanity/avatars/${publicId}`);
-        }
-        req.body.avatarUrl = req.file.path;
-      } catch (deleteError) {
-        console.error('Error handling avatar:', deleteError);
+      // Delete old avatar if exists
+      if (user.avatarUrl) {
+        await deleteCloudinaryImage(user.avatarUrl);
       }
+      // Set new avatar URL
+      req.body.avatarUrl = req.file.path;
     }
 
     // Update user data

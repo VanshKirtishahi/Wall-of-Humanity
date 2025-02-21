@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { toast } from 'react-toastify';
 import { format, isValid } from 'date-fns';
-import { FiEdit2, FiSave, FiX, FiCamera, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar } from 'react-icons/fi';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { FiCalendar, FiCamera, FiEdit2, FiMail, FiMapPin, FiPhone, FiSave, FiX } from 'react-icons/fi';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '../../config/axios';
+import { useAuth } from '../../context/AuthContext';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -104,35 +104,34 @@ const Profile = () => {
       
       // Add all edited data to FormData
       Object.keys(editedData).forEach(key => {
-        if (editedData[key] !== undefined && editedData[key] !== null) {
+        if (editedData[key] !== undefined && editedData[key] !== '') {
           formData.append(key, editedData[key]);
         }
       });
       
       // Add avatar if it exists
-      if (avatar) {
+      if (avatar instanceof File) {
         formData.append('avatar', avatar);
       }
 
       const response = await api.put('/auth/profile', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`
         }
       });
 
       // Update states with response data
       setProfileData(response.data);
-      if (response.data.avatarUrl) {
-        setAvatarPreview(response.data.avatarUrl);
-        setAvatar(null);
-      }
+      setAvatarPreview(response.data.avatarUrl);
+      setAvatar(null);
       
-      // Update localStorage
+      // Update localStorage and auth context
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       const updatedUser = { 
         ...currentUser, 
         ...response.data,
-        token: currentUser.token // Preserve the token
+        avatarUrl: response.data.avatarUrl
       };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
