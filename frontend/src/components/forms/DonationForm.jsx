@@ -228,11 +228,6 @@ const DonationForm = () => {
         formDataToSend.append('images', image);
       }
 
-      // Debug log
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`Sending - ${key}:`, value instanceof File ? 'File' : value);
-      }
-
       let response;
       if (id) {
         response = await donationService.updateDonation(id, formDataToSend);

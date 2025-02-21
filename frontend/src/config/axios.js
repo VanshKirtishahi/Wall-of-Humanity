@@ -36,8 +36,6 @@ api.interceptors.request.use(
     } else if (!config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
-    
-    console.log('Final request URL:', config.url); // Debug log
     return config;
   },
   (error) => Promise.reject(error)

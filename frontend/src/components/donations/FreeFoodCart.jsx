@@ -39,7 +39,6 @@ const FreeFoodCart = () => {
     try {
       setIsLoading(true);
       const response = await api.get('/free-food');
-      console.log('API Response:', response);
       if (Array.isArray(response.data)) {
         setFreeFoodListings(response.data);
       }

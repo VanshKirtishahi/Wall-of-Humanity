@@ -86,16 +86,11 @@ const FreeFoodForm = () => {
         uploadedBy: listing.uploadedBy || user?._id || '',
         venueImage: null,
         location: {
-          address: listing.location?.street 
-            ? `${listing.location.street}, ${listing.location.city}, ${listing.location.state} ${listing.location.zipCode}`
-            : listing.location?.address || '',
+          address: listing.location?.address || '',
           area: listing.location?.area || '',
           city: listing.location?.city || '',
           state: listing.location?.state || '',
-          coordinates: {
-            lat: listing.location?.latitude || null,
-            lng: listing.location?.longitude || null
-          }
+          coordinates: listing.location?.coordinates || null
         }
       });
 
@@ -104,7 +99,6 @@ const FreeFoodForm = () => {
         setImagePreview(listing.venueImage);
       }
     } catch (error) {
-      console.error('Error fetching listing:', error);
       toast.error('Failed to fetch listing details');
       navigate('/free-food');
     } finally {
@@ -115,21 +109,21 @@ const FreeFoodForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    if (name.includes('location.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        location: {
-          ...prev.location,
-          [field]: value
-        }
-      }));
-    } else if (name.includes('availability.')) {
+    if (name.includes('availability.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({
         ...prev,
         availability: {
           ...prev.availability,
+          [field]: value
+        }
+      }));
+    } else if (name.includes('location.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
           [field]: value
         }
       }));
@@ -196,20 +190,28 @@ const FreeFoodForm = () => {
         return;
       }
 
-      // Ensure notes are properly included
-      const submissionData = {
-        ...formData,
+      // Create submission data following DonationForm pattern
+      const dataToSubmit = {
+        venue: formData.venue.trim(),
+        foodType: formData.foodType,
+        organizedBy: formData.organizedBy.trim(),
         availability: {
-          ...formData.availability,
-          notes: formData.availability.notes || ''  // Ensure notes are included
-        }
+          type: formData.availability.type,
+          startTime: formData.availability.startTime,
+          endTime: formData.availability.endTime,
+          specificDate: formData.availability.specificDate,
+          notes: formData.availability.notes?.trim() || ''
+        },
+        location: formData.location,
+        venueImage: formData.venueImage
       };
 
+      // Send directly to service
       if (id) {
-        await freeFoodService.updateListing(id, submissionData);
+        await freeFoodService.updateListing(id, dataToSubmit);
         toast.success('Listing updated successfully!');
       } else {
-        await freeFoodService.createListing(submissionData);
+        await freeFoodService.createListing(dataToSubmit);
         toast.success('Listing created successfully!');
       }
       
@@ -390,14 +392,14 @@ const FreeFoodForm = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="group">
-                  <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                  <label className="block text-sm font-medium text-purple-700 mb-1.5">
                     Start Time
                   </label>
                   <input
                     type="time"
                     name="availability.startTime"
                     value={formData.availability.startTime}
-                    onChange={handleTimeChange}
+                    onChange={handleChange}
                     className="block w-full rounded-lg border-purple-300 shadow-sm 
                       focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                       hover:border-purple-400 transition-colors"
@@ -406,14 +408,14 @@ const FreeFoodForm = () => {
                 </div>
 
                 <div className="group">
-                  <label className="block text-sm font-medium text-purple-700 mb-1.5 group-hover:text-purple-900 transition-colors">
+                  <label className="block text-sm font-medium text-purple-700 mb-1.5">
                     End Time
                   </label>
                   <input
                     type="time"
                     name="availability.endTime"
                     value={formData.availability.endTime}
-                    onChange={handleTimeChange}
+                    onChange={handleChange}
                     className="block w-full rounded-lg border-purple-300 shadow-sm 
                       focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
                       hover:border-purple-400 transition-colors"
@@ -422,18 +424,17 @@ const FreeFoodForm = () => {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-purple-700 mb-1.5">
-                  <span className="font-bold">Notes</span>
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-purple-700 mb-2">
+                  Additional Notes
                 </label>
                 <textarea
                   name="availability.notes"
                   value={formData.availability.notes}
                   onChange={handleChange}
-                  placeholder="Any special instructions about pickup times or location..."
-                  className="block w-full rounded-lg border-purple-300 shadow-sm 
-                    focus:border-purple-500 focus:ring-purple-500 px-4 py-2.5
-                    hover:border-purple-400 transition-colors"
+                  placeholder="Any special instructions or additional information..."
+                  className="mt-1 block w-full rounded-lg border-purple-300 shadow-sm 
+                    focus:border-purple-500 focus:ring-purple-500 px-4 py-2"
                   rows="3"
                 />
               </div>

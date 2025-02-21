@@ -9,36 +9,50 @@ const router = express.Router();
 // Create new listing with image upload
 router.post('/', auth, freeFoodUpload.single('venueImage'), async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-    console.log('File:', req.file);
+    // Validate required fields
+    const requiredFields = ['venue', 'foodType', 'organizedBy'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        message: `Required fields missing: ${missingFields.join(', ')}` 
+      });
+    }
 
-    if (!req.body.venue || !req.body.foodType) {
-      return res.status(400).json({ message: 'Required fields are missing' });
+    let availability = {};
+    try {
+      if (req.body.availability) {
+        availability = JSON.parse(req.body.availability);
+      }
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid availability format' });
     }
 
     const listingData = {
-      ...req.body,
-      uploadedBy: req.user._id
+      venue: req.body.venue.trim(),
+      foodType: req.body.foodType,
+      organizedBy: req.body.organizedBy.trim(),
+      uploadedBy: req.user._id,
+      availability: {
+        type: availability.type || 'specific',
+        startTime: availability.startTime || '',
+        endTime: availability.endTime || '',
+        specificDate: availability.specificDate || '',
+        notes: availability.notes || ''
+      }
     };
 
-    // Parse JSON strings back to objects
-    try {
-      if (req.body.availability) {
-        const availability = JSON.parse(req.body.availability);
-        listingData.availability = {
-          ...availability,
-          notes: availability.notes || ''  // Ensure notes field exists
-        };
-      }
-      if (req.body.location) {
+    // Parse location if exists
+    if (req.body.location) {
+      try {
         listingData.location = JSON.parse(req.body.location);
+      } catch (error) {
+        console.error('Error parsing location:', error);
+        return res.status(400).json({ message: 'Invalid location format' });
       }
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      return res.status(400).json({ message: 'Invalid data format' });
     }
 
-    // Add Cloudinary image URL if image was uploaded
+    // Add image if uploaded
     if (req.file) {
       listingData.venueImage = req.file.path;
     }

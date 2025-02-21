@@ -84,9 +84,6 @@ router.get('/my-donations', auth, async (req, res) => {
 // Create donation
 router.post('/', auth, donationUpload.array('images', 5), async (req, res) => {
   try {
-    console.log('Request body:', req.body);
-    console.log('Files:', req.files);
-
     // Validate required fields
     if (!req.body.title || !req.body.description || !req.body.quantity) {
       return res.status(400).json({ message: 'Required fields are missing' });
@@ -129,7 +126,6 @@ router.post('/', auth, donationUpload.array('images', 5), async (req, res) => {
     console.log('Created donation:', savedDonation);
     res.status(201).json(savedDonation);
   } catch (error) {
-    console.error('Error creating donation:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }

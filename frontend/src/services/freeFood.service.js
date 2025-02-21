@@ -11,18 +11,19 @@ const freeFoodService = {
         throw new Error('Please login to create a listing');
       }
 
-      // Handle form data
-      Object.keys(formData).forEach(key => {
-        if (key === 'venueImage') {
-          if (formData.venueImage instanceof File) {
-            form.append('venueImage', formData.venueImage);
-          }
-        } else if (typeof formData[key] === 'object') {
-          form.append(key, JSON.stringify(formData[key]));
-        } else {
-          form.append(key, formData[key]);
-        }
-      });
+      // Add basic fields
+      form.append('venue', formData.venue);
+      form.append('foodType', formData.foodType);
+      form.append('organizedBy', formData.organizedBy);
+
+      // Add availability and location as JSON strings
+      form.append('availability', JSON.stringify(formData.availability));
+      form.append('location', JSON.stringify(formData.location));
+
+      // Add image if exists
+      if (formData.venueImage instanceof File) {
+        form.append('venueImage', formData.venueImage);
+      }
 
       const response = await api.post('/api/free-food', form, {
         headers: {
@@ -32,11 +33,7 @@ const freeFoodService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Create listing error:', error);
-      if (error.response?.data) {
-        throw error.response.data;
-      }
-      throw { message: 'Failed to create listing' };
+      throw error.response?.data || { message: 'Failed to create listing' };
     }
   },
 
