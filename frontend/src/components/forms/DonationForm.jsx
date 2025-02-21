@@ -260,11 +260,15 @@ const DonationForm = () => {
     if (!formData.title?.trim()) errors.push('Title is required');
     if (!formData.description?.trim()) errors.push('Description is required');
     if (!formData.quantity?.trim()) errors.push('Quantity is required');
-    if (!formData.foodType?.trim()) errors.push('Food type is required');
-    if (!formData.location?.address?.trim()) errors.push('Address is required');
-
+    
+    // Only validate foodType if donation type is Food
+    if (formData.type === 'Food' && !formData.foodType?.trim()) {
+      errors.push('Food type is required');
+    }
+    
     // Location validation
     const location = formData.location;
+    if (!location.address?.trim()) errors.push('Address is required');
     if (!location.city?.trim()) errors.push('City is required');
     if (!location.state?.trim()) errors.push('State is required');
 

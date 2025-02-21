@@ -24,41 +24,117 @@ const Register = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate passwords match
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!hasUpperCase) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!hasLowerCase) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    if (!hasNumbers) {
+      return 'Password must contain at least one number';
+    }
+    if (!hasSpecialChar) {
+      return 'Password must contain at least one special character';
+    }
+    return null;
+  };
+
+  const validateEmail = (email) => {
+    // More comprehensive email validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  };
+
+  const validatePhone = (phone) => {
+    // Indian phone number validation (10 digits, optional +91 prefix)
+    const phoneRegex = /^(?:\+91)?[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
+      return 'Please enter a valid 10-digit Indian phone number';
+    }
+    return null;
+  };
+
+  const validateForm = () => {
+    // Name validation
+    if (!formData.name.trim()) {
+      toast.error('Name is required');
+      return false;
+    }
+    if (formData.name.trim().length < 2) {
+      toast.error('Name must be at least 2 characters long');
+      return false;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      toast.error('Name can only contain letters and spaces');
+      return false;
+    }
+
+    // Email validation
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      toast.error(emailError);
+      return false;
+    }
+
+    // Phone validation
+    if (formData.phone) {
+      const phoneError = validatePhone(formData.phone);
+      if (phoneError) {
+        toast.error(phoneError);
+        return false;
+      }
+    }
+
+    // Password validation
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      toast.error(passwordError);
+      return false;
+    }
+
+    // Confirm password validation
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
-      return;
+      return false;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
+    return true;
+  };
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error('Please enter a valid email address');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Run all validations before proceeding
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Only send required fields
       const registrationData = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
-        password: formData.password
+        password: formData.password,
+        phone: formData.phone ? formData.phone.replace(/\s+/g, '') : undefined
       };
 
       await register(registrationData);
-      toast.success('Registration successful!');
-      navigate('/profile');
+      toast.success('Registration successful! Please check your email for verification.');
+      navigate('/login');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to register';
       toast.error(errorMessage);

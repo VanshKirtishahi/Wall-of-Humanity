@@ -86,11 +86,6 @@ class DonationService {
         throw new Error('Authentication required');
       }
   
-      // Log form data for debugging
-      for (let [key, value] of formData.entries()) {
-        console.log(`Updating ${key}:`, value instanceof File ? 'File' : value);
-      }
-  
       const response = await api.put(`/donations/${id}`, formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
